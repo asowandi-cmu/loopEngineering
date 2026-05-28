@@ -93,7 +93,7 @@ while true; do
     # Capture output while still displaying it
     OUTPUT=$(copilot \
         --allow-all-tools \
-        --model claude-opus-4.6 \
+        --model claude-opus-4.8 \
         -p "$PROMPT_CONTENT" 2>&1 | tee /dev/stderr)
 
     # Push changes after each iteration

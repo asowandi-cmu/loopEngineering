@@ -235,6 +235,20 @@
         border-color: var(--dracula-pink);
       }
 
+      .persona-btn.compare {
+        background: rgba(189, 147, 249, 0.35);
+        color: #f8f8f2;
+        border-color: var(--dracula-purple);
+      }
+
+      .compare-hint {
+        font-size: 0.38em;
+        color: #8b949e;
+        margin-top: 0.2rem;
+        text-align: center;
+        transition: opacity 0.3s;
+      }
+
       #persona-viz-wrap {
         width: 100%;
         min-height: 590px;
@@ -428,13 +442,17 @@ You are an expert planner and coordinator for software development tasks.
           <section data-background="#282a36">
             <h2>Role Prompting Research</h2>
             <ul class="tight small">
-              <li class="fragment"><strong>"Role-Play Prompting"</strong> (Kong et al., NAACL 2024) — AQuA accuracy: 53.5% → 63.8%</li>
-              <li class="fragment"><strong>"ExpertPrompting"</strong> (Xu et al., 2023) — ExpertLLaMA at 96% of ChatGPT</li>
-              <li class="fragment"><strong>"In-Context Impersonation"</strong> (Salewski et al., NeurIPS 2023 Spotlight)</li>
-              <li class="fragment"><strong>"Representation Engineering"</strong> (Zou et al., 2023) — 36+ behaviors controlled via vectors</li>
+              <li class="fragment"><strong>"Role-Play Prompting"</strong> (Kong et al., NAACL 2024) — AQuA accuracy: 53.5% → 63.8%
+                <br><span class="dim">Assigning an expert persona before zero-shot reasoning tasks measurably improves accuracy on college-level algebra without any examples.</span></li>
+              <li class="fragment"><strong>"ExpertPrompting"</strong> (Xu et al., 2023) — ExpertLLaMA at 96% of ChatGPT
+                <br><span class="dim">Generating detailed expert identity descriptions as prompts; fine-tuned open-source model achieves near-parity with ChatGPT (GPT-4 judged).</span></li>
+              <li class="fragment"><strong>"In-Context Impersonation"</strong> (Salewski et al., NeurIPS 2023 Spotlight)
+                <br><span class="dim">Domain-expert personas outperform non-experts on matched tasks; also reveals social biases embedded in model representations.</span></li>
+              <li class="fragment"><strong>"Representation Engineering"</strong> (Zou et al., 2023) — 36+ behaviors controlled via vectors
+                <br><span class="dim">Linear "control vectors" in residual streams steer honesty, power-seeking, harmlessness — no fine-tuning needed, just representation-level intervention.</span></li>
             </ul>
             <aside class="notes">
-              The headline is that prompting as an expert changes measurable task performance.
+              The headline is that prompting as an expert changes measurable task performance. Papers 1-3 show prompting-level gains; paper 4 proves the mechanism exists at the representation level.
             </aside>
           </section>
           <section data-background="#282a36">
@@ -449,29 +467,47 @@ Residual Stream → Sparse Feature Activation → Output Distribution</div>
           <section data-background="#282a36">
             <h2>Anthropic's Proof</h2>
             <ul class="tight small">
-              <li class="fragment"><strong>"Scaling Monosemanticity"</strong> (Anthropic, May 2024) — found features for <span class="quote">"code with security vulnerabilities"</span> vs <span class="quote">"abstract discussion of security"</span></li>
-              <li class="fragment"><strong>"Refusal in Language Models Is Mediated by a Single Direction"</strong> (Arditi et al., 2024) — complex behaviors live in 1D subspaces</li>
+              <li class="fragment"><strong>"Scaling Monosemanticity"</strong> (Anthropic, May 2024) — found features for <span class="quote">"code with security vulnerabilities"</span> vs <span class="quote">"abstract discussion of security"</span>
+                <br><span class="dim">Used sparse autoencoders on Claude 3 Sonnet to extract millions of interpretable features. The model has distinct neural features for recognizing actual code vulnerabilities vs. conceptual security discussions — proving role-context creates genuinely different internal representations.</span></li>
+              <li class="fragment"><strong>"Refusal in Language Models Is Mediated by a Single Direction"</strong> (Arditi et al., 2024) — complex behaviors live in 1D subspaces
+                <br><span class="dim">Refusal behavior across 13 open-source models (up to 72B params) is controlled by a single direction in activation space. Erase it → model stops refusing. Add it → model refuses everything. Shows safety behaviors are surprisingly simple and brittle linear structures.</span></li>
             </ul>
             <aside class="notes">
-              The important point is not interpretability trivia; it is that behavior steering is real and directional.
+              The important point is not interpretability trivia; it is that behavior steering is real and directional. Monosemanticity proves distinct features exist for the same domain at different abstraction levels. The refusal paper proves complex behaviors can be a single vector — reinforcing that persona prompts work by activating specific directional pathways.
+            </aside>
+          </section>
+          <section data-background="#282a36">
+            <h2>Let's Prove It Live</h2>
+            <p class="small">On the next slide, a real embedding model runs <strong>in your browser</strong>:</p>
+            <ol class="tight small">
+              <li class="fragment"><strong>Model:</strong> <code>all-MiniLM-L6-v2</code> (HuggingFace / Transformers.js) — 384-dimensional sentence embeddings via ONNX, no API key needed</li>
+              <li class="fragment"><strong>Input:</strong> 13 software concepts × 4 persona-framed sentences<br>
+                <span class="dim">e.g. "As a security engineer, Authentication is critical because…" vs "As a developer, Authentication is important for…"</span></li>
+              <li class="fragment"><strong>Reduction:</strong> PCA projects 384D → 2D so we can visualize spatial relationships</li>
+              <li class="fragment"><strong>Clustering:</strong> k-means (k=4) groups concepts by proximity — labels are derived from members, not hand-assigned</li>
+            </ol>
+            <p class="fragment small" style="margin-top:1rem;color:#50fa7b;"><strong>What to watch for:</strong> The same concepts land in different positions and clusters depending on the persona framing. This is not an illustration — it's the actual vector geometry of a real transformer.</p>
+            <aside class="notes">
+              Walk through each step so the audience understands the next slide is computing real vectors, not a pre-baked animation. Emphasize: same model, same concepts, only the framing sentence changes — and the geometry shifts.
             </aside>
           </section>
           <section data-background="#282a36">
             <h2>Interactive Persona Vector Space</h2>
             <div class="persona-controls">
-              <button class="persona-btn active" data-persona="security" onclick="switchPersona('security')">🔐 Security Engineer</button>
-              <button class="persona-btn" data-persona="developer" onclick="switchPersona('developer')">💻 Developer</button>
-              <button class="persona-btn" data-persona="product" onclick="switchPersona('product')">📊 Product Manager</button>
-              <button class="persona-btn" data-persona="educator" onclick="switchPersona('educator')">🎓 Educator</button>
+              <button class="persona-btn active" data-persona="security" onclick="handlePersonaClick('security')">🔐 Security Engineer</button>
+              <button class="persona-btn" data-persona="developer" onclick="handlePersonaClick('developer')">💻 Developer</button>
+              <button class="persona-btn" data-persona="product" onclick="handlePersonaClick('product')">📊 Product Manager</button>
+              <button class="persona-btn" data-persona="educator" onclick="handlePersonaClick('educator')">🎓 Educator</button>
             </div>
+            <div class="compare-hint"><span id="embed-status" style="color:#ffb86c;"></span> Click a second persona to overlay &amp; compare. Click the same again to exit comparison.</div>
             <div id="persona-viz-wrap">
               <div id="persona-viz"></div>
               <div id="persona-tooltip" class="viz-tooltip"></div>
             </div>
             <div id="cluster-legend" class="cluster-legend"></div>
-            <div class="viz-caption">Same concepts, different latent geometry. Click personas to see how relevance clusters shift.</div>
+            <div class="viz-caption">Real sentence embeddings (all-MiniLM-L6-v2 via HuggingFace Transformers.js) — same concepts, different persona framing → different geometry.</div>
             <aside class="notes">
-              Click through personas. Explain that the same concepts move because each role prioritizes different relations and boundaries.
+              Click through personas. Click a second to overlay both — lines connect same concepts showing how they move between roles. This makes the "different geometry" claim visceral.
             </aside>
           </section>
         </section>
@@ -1058,334 +1094,333 @@ fi
     <script src="node_modules/reveal.js/dist/plugin/notes.js"></script>
     <script src="node_modules/reveal.js/dist/plugin/markdown.js"></script>
     <script>
-      const personaData = {
-        security: {
-          label: "Security Engineer",
-          clusters: {
-            identity: { label: "Identity & Trust", color: "#ff79c6" },
-            hygiene: { label: "Defensive Coding", color: "#8be9fd" },
-            resilience: { label: "Operational Resilience", color: "#50fa7b" },
-            governance: { label: "Governance & Practice", color: "#bd93f9" }
-          },
-          points: [
-            { concept: "Authentication", x: 44, y: 38, cluster: "identity" },
-            { concept: "Access Control", x: 52, y: 40, cluster: "identity" },
-            { concept: "Encryption", x: 48, y: 50, cluster: "identity" },
-            { concept: "Input Sanitization", x: 30, y: 45, cluster: "hygiene" },
-            { concept: "Data Validation", x: 26, y: 56, cluster: "hygiene" },
-            { concept: "Error Handling", x: 34, y: 64, cluster: "hygiene" },
-            { concept: "Logging", x: 63, y: 58, cluster: "resilience" },
-            { concept: "Monitoring", x: 72, y: 54, cluster: "resilience" },
-            { concept: "Performance", x: 79, y: 62, cluster: "resilience" },
-            { concept: "Testing", x: 58, y: 72, cluster: "governance" },
-            { concept: "Code Review", x: 49, y: 78, cluster: "governance" },
-            { concept: "Documentation", x: 40, y: 71, cluster: "governance" },
-            { concept: "API Design", x: 68, y: 33, cluster: "identity" }
-          ]
-        },
-        developer: {
-          label: "Developer",
-          clusters: {
-            delivery: { label: "Delivery Core", color: "#8be9fd" },
-            quality: { label: "Quality Loop", color: "#50fa7b" },
-            operations: { label: "Ops Signals", color: "#ffb86c" },
-            security: { label: "Security Surface", color: "#ff79c6" }
-          },
-          points: [
-            { concept: "API Design", x: 43, y: 34, cluster: "delivery" },
-            { concept: "Performance", x: 55, y: 33, cluster: "delivery" },
-            { concept: "Error Handling", x: 47, y: 46, cluster: "delivery" },
-            { concept: "Testing", x: 36, y: 58, cluster: "quality" },
-            { concept: "Code Review", x: 48, y: 63, cluster: "quality" },
-            { concept: "Documentation", x: 29, y: 70, cluster: "quality" },
-            { concept: "Logging", x: 69, y: 49, cluster: "operations" },
-            { concept: "Monitoring", x: 77, y: 58, cluster: "operations" },
-            { concept: "Data Validation", x: 61, y: 46, cluster: "operations" },
-            { concept: "Authentication", x: 24, y: 34, cluster: "security" },
-            { concept: "Access Control", x: 18, y: 44, cluster: "security" },
-            { concept: "Encryption", x: 20, y: 56, cluster: "security" },
-            { concept: "Input Sanitization", x: 31, y: 47, cluster: "security" }
-          ]
-        },
-        product: {
-          label: "Product Manager",
-          clusters: {
-            value: { label: "User Value", color: "#ffb86c" },
-            reliability: { label: "Reliability", color: "#50fa7b" },
-            risk: { label: "Risk", color: "#ff79c6" },
-            enablement: { label: "Team Enablement", color: "#bd93f9" }
-          },
-          points: [
-            { concept: "API Design", x: 48, y: 32, cluster: "value" },
-            { concept: "Performance", x: 58, y: 37, cluster: "value" },
-            { concept: "Documentation", x: 38, y: 41, cluster: "value" },
-            { concept: "Monitoring", x: 70, y: 46, cluster: "reliability" },
-            { concept: "Logging", x: 63, y: 55, cluster: "reliability" },
-            { concept: "Error Handling", x: 56, y: 52, cluster: "reliability" },
-            { concept: "Authentication", x: 22, y: 43, cluster: "risk" },
-            { concept: "Access Control", x: 18, y: 54, cluster: "risk" },
-            { concept: "Encryption", x: 25, y: 62, cluster: "risk" },
-            { concept: "Testing", x: 46, y: 68, cluster: "enablement" },
-            { concept: "Code Review", x: 55, y: 73, cluster: "enablement" },
-            { concept: "Data Validation", x: 66, y: 67, cluster: "enablement" },
-            { concept: "Input Sanitization", x: 34, y: 58, cluster: "risk" }
-          ]
-        },
-        educator: {
-          label: "Educator",
-          clusters: {
-            foundations: { label: "Foundations", color: "#8be9fd" },
-            safe: { label: "Safe Practice", color: "#50fa7b" },
-            production: { label: "Production Thinking", color: "#ffb86c" },
-            communication: { label: "Communication", color: "#bd93f9" }
-          },
-          points: [
-            { concept: "Authentication", x: 31, y: 36, cluster: "foundations" },
-            { concept: "API Design", x: 44, y: 36, cluster: "foundations" },
-            { concept: "Data Validation", x: 37, y: 48, cluster: "foundations" },
-            { concept: "Input Sanitization", x: 24, y: 58, cluster: "safe" },
-            { concept: "Access Control", x: 32, y: 63, cluster: "safe" },
-            { concept: "Encryption", x: 22, y: 72, cluster: "safe" },
-            { concept: "Error Handling", x: 59, y: 47, cluster: "production" },
-            { concept: "Logging", x: 70, y: 46, cluster: "production" },
-            { concept: "Monitoring", x: 76, y: 57, cluster: "production" },
-            { concept: "Performance", x: 67, y: 34, cluster: "production" },
-            { concept: "Testing", x: 52, y: 69, cluster: "communication" },
-            { concept: "Code Review", x: 61, y: 77, cluster: "communication" },
-            { concept: "Documentation", x: 43, y: 79, cluster: "communication" }
-          ]
-        }
-      };
+      // --- Visualization state (global so module can access) ---
+      window.personaData = {};
+      window.embeddingsReady = false;
+      var personaVizInitialized = false;
+      var currentPersona = "security";
+      var comparePersona = null;
+      var svg, hullLayer, compareHullLayer, pointLayer, comparePointLayer;
+      var labelLayer, clusterLabelLayer, lineLayer, tooltip, xScale, yScale;
 
-      let personaVizInitialized = false;
-      let currentPersona = "security";
-      let svg;
-      let hullLayer;
-      let pointLayer;
-      let labelLayer;
-      let clusterLabelLayer;
-      let tooltip;
-      let xScale;
-      let yScale;
-
-      function paddedHull(points, pad = 16) {
-        const hull = d3.polygonHull(points);
+      function paddedHull(points, pad) {
+        pad = pad || 16;
+        var hull = d3.polygonHull(points);
         if (!hull) return null;
-        const centroid = [
-          d3.mean(hull, (d) => d[0]),
-          d3.mean(hull, (d) => d[1])
-        ];
-        return hull.map(([x, y]) => {
-          const dx = x - centroid[0];
-          const dy = y - centroid[1];
-          const length = Math.sqrt(dx * dx + dy * dy) || 1;
-          return [x + (dx / length) * pad, y + (dy / length) * pad];
+        var centroid = [d3.mean(hull, function(d) { return d[0]; }), d3.mean(hull, function(d) { return d[1]; })];
+        return hull.map(function(p) {
+          var dx = p[0] - centroid[0], dy = p[1] - centroid[1];
+          var length = Math.sqrt(dx * dx + dy * dy) || 1;
+          return [p[0] + (dx / length) * pad, p[1] + (dy / length) * pad];
         });
       }
 
       function legendFor(personaKey) {
-        const legend = document.getElementById("cluster-legend");
+        var legend = document.getElementById("cluster-legend");
         legend.innerHTML = "";
-        Object.values(personaData[personaKey].clusters).forEach((cluster) => {
-          const el = document.createElement("span");
+        var clusters = window.personaData[personaKey].clusters;
+        Object.keys(clusters).forEach(function(key) {
+          var cluster = clusters[key];
+          var el = document.createElement("span");
           el.textContent = cluster.label;
-          el.style.background = `${cluster.color}22`;
+          el.style.background = cluster.color + "22";
           el.style.color = cluster.color;
           legend.appendChild(el);
         });
       }
 
       function ensurePersonaViz() {
-        const container = document.getElementById("persona-viz");
+        var container = document.getElementById("persona-viz");
         if (!container || personaVizInitialized) return;
+        if (!window.embeddingsReady) return;
 
-        const width = container.clientWidth || 960;
-        const height = 540;
+        var width = container.clientWidth || 960;
+        var height = 540;
         tooltip = d3.select("#persona-tooltip");
         xScale = d3.scaleLinear().domain([0, 100]).range([45, width - 45]);
         yScale = d3.scaleLinear().domain([0, 100]).range([height - 35, 35]);
 
-        svg = d3
-          .select(container)
-          .append("svg")
-          .attr("viewBox", `0 0 ${width} ${height}`)
-          .attr("width", "100%")
-          .attr("height", height)
+        svg = d3.select(container).append("svg")
+          .attr("viewBox", "0 0 " + width + " " + height)
+          .attr("width", "100%").attr("height", height)
           .style("display", "block");
 
         svg.append("rect").attr("width", width).attr("height", height).attr("fill", "#0d1117");
 
-        const grid = svg.append("g").attr("opacity", 0.14);
-        d3.range(10, 100, 20).forEach((tick) => {
-          grid
-            .append("line")
-            .attr("x1", xScale(tick))
-            .attr("x2", xScale(tick))
-            .attr("y1", 24)
-            .attr("y2", height - 24)
-            .attr("stroke", "#8b949e");
-          grid
-            .append("line")
-            .attr("x1", 24)
-            .attr("x2", width - 24)
-            .attr("y1", yScale(tick))
-            .attr("y2", yScale(tick))
-            .attr("stroke", "#8b949e");
+        var grid = svg.append("g").attr("opacity", 0.14);
+        d3.range(10, 100, 20).forEach(function(tick) {
+          grid.append("line").attr("x1", xScale(tick)).attr("x2", xScale(tick))
+            .attr("y1", 24).attr("y2", height - 24).attr("stroke", "#8b949e");
+          grid.append("line").attr("x1", 24).attr("x2", width - 24)
+            .attr("y1", yScale(tick)).attr("y2", yScale(tick)).attr("stroke", "#8b949e");
         });
 
-        svg
-          .append("text")
-          .attr("x", 30)
-          .attr("y", 28)
-          .attr("fill", "#8be9fd")
-          .attr("font-size", 14)
-          .text("Latent priority / conceptual proximity map");
+        svg.append("text").attr("x", 30).attr("y", 28)
+          .attr("fill", "#8be9fd").attr("font-size", 14)
+          .text("Live embeddings — all-MiniLM-L6-v2 + PCA (Transformers.js)");
 
         hullLayer = svg.append("g");
+        compareHullLayer = svg.append("g");
+        lineLayer = svg.append("g");
         clusterLabelLayer = svg.append("g");
         pointLayer = svg.append("g");
+        comparePointLayer = svg.append("g");
         labelLayer = svg.append("g");
 
         personaVizInitialized = true;
-        switchPersona(currentPersona);
+        renderViz();
+      }
+
+      function handlePersonaClick(personaKey) {
+        if (!window.embeddingsReady) return;
+        if (personaKey === currentPersona) {
+          comparePersona = null;
+        } else if (comparePersona === personaKey) {
+          comparePersona = null;
+        } else if (comparePersona === null && personaKey !== currentPersona) {
+          comparePersona = personaKey;
+        } else {
+          currentPersona = personaKey;
+          comparePersona = null;
+        }
+        updateButtonStates();
+        renderViz();
+      }
+
+      function updateButtonStates() {
+        document.querySelectorAll(".persona-btn").forEach(function(btn) {
+          btn.classList.remove("active", "compare");
+          if (btn.dataset.persona === currentPersona) btn.classList.add("active");
+          if (btn.dataset.persona === comparePersona) btn.classList.add("compare");
+        });
       }
 
       function switchPersona(personaKey) {
+        if (!window.embeddingsReady) return;
         currentPersona = personaKey;
-        document.querySelectorAll(".persona-btn").forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.persona === personaKey);
-        });
-
-        if (!personaVizInitialized) {
-          ensurePersonaViz();
-          return;
-        }
-
-        const persona = personaData[personaKey];
-        const points = persona.points.map((point) => ({
-          ...point,
-          sx: xScale(point.x),
-          sy: yScale(point.y),
-          clusterLabel: persona.clusters[point.cluster].label,
-          color: persona.clusters[point.cluster].color
-        }));
-
-        const clusterEntries = Object.entries(persona.clusters).map(([key, meta]) => {
-          const clusterPoints = points.filter((point) => point.cluster === key);
-          const hull = paddedHull(clusterPoints.map((point) => [point.sx, point.sy]), 18);
-          return {
-            key,
-            label: meta.label,
-            color: meta.color,
-            hull,
-            cx: d3.mean(clusterPoints, (d) => d.sx),
-            cy: d3.mean(clusterPoints, (d) => d.sy)
-          };
-        });
-
-        const hulls = hullLayer.selectAll("path").data(clusterEntries, (d) => d.key);
-        hulls
-          .join(
-            (enter) =>
-              enter
-                .append("path")
-                .attr("fill", (d) => `${d.color}22`)
-                .attr("stroke", (d) => d.color)
-                .attr("stroke-width", 2)
-                .attr("d", (d) => (d.hull ? `M${d.hull.join("L")}Z` : null))
-                .attr("opacity", 0)
-                .call((enter) => enter.transition().duration(800).attr("opacity", 1)),
-            (update) =>
-              update.call((update) =>
-                update
-                  .transition()
-                  .duration(800)
-                  .attr("fill", (d) => `${d.color}22`)
-                  .attr("stroke", (d) => d.color)
-                  .attr("d", (d) => (d.hull ? `M${d.hull.join("L")}Z` : null))
-              ),
-            (exit) => exit.call((exit) => exit.transition().duration(300).attr("opacity", 0).remove())
-          );
-
-        const clusterLabels = clusterLabelLayer.selectAll("text").data(clusterEntries, (d) => d.key);
-        clusterLabels
-          .join(
-            (enter) =>
-              enter
-                .append("text")
-                .attr("x", (d) => d.cx)
-                .attr("y", (d) => d.cy)
-                .attr("text-anchor", "middle")
-                .attr("fill", (d) => d.color)
-                .attr("font-size", 13)
-                .attr("font-weight", 700)
-                .attr("opacity", 0)
-                .text((d) => d.label)
-                .call((enter) => enter.transition().duration(800).attr("opacity", 0.92)),
-            (update) =>
-              update.call((update) =>
-                update
-                  .transition()
-                  .duration(800)
-                  .attr("x", (d) => d.cx)
-                  .attr("y", (d) => d.cy)
-                  .attr("fill", (d) => d.color)
-                  .text((d) => d.label)
-              ),
-            (exit) => exit.remove()
-          );
-
-        const pointGroups = pointLayer.selectAll("g.point").data(points, (d) => d.concept);
-        const enteredGroups = pointGroups
-          .enter()
-          .append("g")
-          .attr("class", "point")
-          .style("cursor", "pointer")
-          .on("mousemove", (event, d) => {
-            tooltip
-              .style("opacity", 1)
-              .style("left", `${event.offsetX + 16}px`)
-              .style("top", `${event.offsetY + 16}px`)
-              .html(`<strong>${d.concept}</strong><br>${d.clusterLabel}`);
-          })
-          .on("mouseleave", () => tooltip.style("opacity", 0));
-
-        enteredGroups
-          .append("circle")
-          .attr("r", 0)
-          .attr("fill", (d) => d.color)
-          .attr("stroke", "#f8f8f2")
-          .attr("stroke-width", 1.5)
-          .transition()
-          .duration(800)
-          .attr("r", 9);
-
-        enteredGroups
-          .append("text")
-          .attr("text-anchor", "middle")
-          .attr("dy", -14)
-          .attr("fill", "#e6edf3")
-          .attr("font-size", 11)
-          .text((d) => d.concept);
-
-        const mergedGroups = enteredGroups.merge(pointGroups);
-        mergedGroups
-          .transition()
-          .duration(800)
-          .attr("transform", (d) => `translate(${d.sx},${d.sy})`);
-
-        mergedGroups
-          .select("circle")
-          .transition()
-          .duration(800)
-          .attr("fill", (d) => d.color)
-          .attr("r", 9);
-
-        mergedGroups.select("text").text((d) => d.concept);
-        pointGroups.exit().remove();
-        legendFor(personaKey);
+        comparePersona = null;
+        updateButtonStates();
+        if (!personaVizInitialized) { ensurePersonaViz(); return; }
+        renderViz();
       }
 
+      function renderViz() {
+        if (!personaVizInitialized || !window.embeddingsReady) return;
+
+        var persona = window.personaData[currentPersona];
+        var points = persona.points.map(function(point) {
+          return Object.assign({}, point, {
+            sx: xScale(point.x), sy: yScale(point.y),
+            clusterLabel: persona.clusters[point.cluster].label,
+            color: persona.clusters[point.cluster].color
+          });
+        });
+
+        var clusterEntries = Object.keys(persona.clusters).map(function(key) {
+          var meta = persona.clusters[key];
+          var clusterPoints = points.filter(function(p) { return p.cluster === key; });
+          var hull = paddedHull(clusterPoints.map(function(p) { return [p.sx, p.sy]; }), 18);
+          return { key: key, label: meta.label, color: meta.color, hull: hull,
+            cx: d3.mean(clusterPoints, function(d) { return d.sx; }),
+            cy: d3.mean(clusterPoints, function(d) { return d.sy; }) };
+        });
+
+        // Primary hulls
+        hullLayer.selectAll("path").data(clusterEntries, function(d) { return d.key; }).join(
+          function(enter) { return enter.append("path")
+            .attr("fill", function(d) { return d.color + "22"; })
+            .attr("stroke", function(d) { return d.color; })
+            .attr("stroke-width", 2)
+            .attr("d", function(d) { return d.hull ? "M" + d.hull.join("L") + "Z" : null; })
+            .attr("opacity", 0).call(function(e) { e.transition().duration(800).attr("opacity", 1); }); },
+          function(update) { return update.call(function(u) { u.transition().duration(800)
+            .attr("fill", function(d) { return d.color + "22"; })
+            .attr("stroke", function(d) { return d.color; })
+            .attr("d", function(d) { return d.hull ? "M" + d.hull.join("L") + "Z" : null; }); }); },
+          function(exit) { return exit.transition().duration(300).attr("opacity", 0).remove(); }
+        );
+
+        // Cluster labels
+        clusterLabelLayer.selectAll("text").data(clusterEntries, function(d) { return d.key; }).join(
+          function(enter) { return enter.append("text")
+            .attr("x", function(d) { return d.cx; }).attr("y", function(d) { return d.cy; })
+            .attr("text-anchor", "middle").attr("fill", function(d) { return d.color; })
+            .attr("font-size", 13).attr("font-weight", 700).attr("opacity", 0)
+            .text(function(d) { return d.label; })
+            .call(function(e) { e.transition().duration(800).attr("opacity", 0.92); }); },
+          function(update) { return update.call(function(u) { u.transition().duration(800)
+            .attr("x", function(d) { return d.cx; }).attr("y", function(d) { return d.cy; })
+            .attr("fill", function(d) { return d.color; }).text(function(d) { return d.label; }); }); },
+          function(exit) { return exit.remove(); }
+        );
+
+        // Primary points
+        var pointGroups = pointLayer.selectAll("g.point").data(points, function(d) { return d.concept; });
+        var enteredGroups = pointGroups.enter()
+          .append("g").attr("class", "point").style("cursor", "pointer")
+          .on("mousemove", function(event, d) {
+            var html = "<strong>" + d.concept + "</strong><br>" + d.clusterLabel;
+            if (comparePersona) {
+              var compPoint = window.personaData[comparePersona].points.find(function(p) { return p.concept === d.concept; });
+              if (compPoint) {
+                var compCluster = window.personaData[comparePersona].clusters[compPoint.cluster];
+                html += '<br><span style="color:' + compCluster.color + '">\u2b21 ' + compCluster.label + '</span>';
+              }
+            }
+            tooltip.style("opacity", 1)
+              .style("left", (event.offsetX + 16) + "px")
+              .style("top", (event.offsetY + 16) + "px").html(html);
+          })
+          .on("mouseleave", function() { tooltip.style("opacity", 0); });
+
+        enteredGroups.append("circle")
+          .attr("r", 0).attr("fill", function(d) { return d.color; })
+          .attr("stroke", "#f8f8f2").attr("stroke-width", 1.5)
+          .transition().duration(800).attr("r", 9);
+
+        enteredGroups.append("text")
+          .attr("text-anchor", "middle").attr("dy", -14)
+          .attr("fill", "#e6edf3").attr("font-size", 11)
+          .text(function(d) { return d.concept; });
+
+        var mergedGroups = enteredGroups.merge(pointGroups);
+        mergedGroups.transition().duration(800)
+          .attr("transform", function(d) { return "translate(" + d.sx + "," + d.sy + ")"; });
+        mergedGroups.select("circle").transition().duration(800)
+          .attr("fill", function(d) { return d.color; }).attr("r", 9);
+        mergedGroups.select("text").text(function(d) { return d.concept; });
+        pointGroups.exit().remove();
+
+        // --- Comparison overlay ---
+        if (comparePersona) {
+          var compData = window.personaData[comparePersona];
+          var compPoints = compData.points.map(function(point) {
+            return Object.assign({}, point, {
+              sx: xScale(point.x), sy: yScale(point.y),
+              clusterLabel: compData.clusters[point.cluster].label,
+              color: compData.clusters[point.cluster].color
+            });
+          });
+
+          var compClusterEntries = Object.keys(compData.clusters).map(function(key) {
+            var meta = compData.clusters[key];
+            var clusterPts = compPoints.filter(function(p) { return p.cluster === key; });
+            var hull = paddedHull(clusterPts.map(function(p) { return [p.sx, p.sy]; }), 18);
+            return { key: "comp-" + key, label: meta.label, color: meta.color, hull: hull,
+              cx: d3.mean(clusterPts, function(d) { return d.sx; }),
+              cy: d3.mean(clusterPts, function(d) { return d.sy; }) };
+          });
+
+          compareHullLayer.selectAll("path").data(compClusterEntries, function(d) { return d.key; }).join(
+            function(enter) { return enter.append("path")
+              .attr("fill", function(d) { return d.color + "11"; })
+              .attr("stroke", function(d) { return d.color; })
+              .attr("stroke-width", 1.5).attr("stroke-dasharray", "6,4")
+              .attr("d", function(d) { return d.hull ? "M" + d.hull.join("L") + "Z" : null; })
+              .attr("opacity", 0).call(function(e) { e.transition().duration(800).attr("opacity", 0.7); }); },
+            function(update) { return update.call(function(u) { u.transition().duration(800)
+              .attr("fill", function(d) { return d.color + "11"; })
+              .attr("stroke", function(d) { return d.color; })
+              .attr("d", function(d) { return d.hull ? "M" + d.hull.join("L") + "Z" : null; }); }); },
+            function(exit) { return exit.transition().duration(300).attr("opacity", 0).remove(); }
+          );
+
+          var lineData = points.map(function(p) {
+            var comp = compPoints.find(function(c) { return c.concept === p.concept; });
+            return comp ? { concept: p.concept, x1: p.sx, y1: p.sy, x2: comp.sx, y2: comp.sy } : null;
+          }).filter(Boolean);
+
+          lineLayer.selectAll("line").data(lineData, function(d) { return d.concept; }).join(
+            function(enter) { return enter.append("line")
+              .attr("x1", function(d) { return d.x1; }).attr("y1", function(d) { return d.y1; })
+              .attr("x2", function(d) { return d.x1; }).attr("y2", function(d) { return d.y1; })
+              .attr("stroke", "#8b949e").attr("stroke-width", 1)
+              .attr("stroke-dasharray", "3,3").attr("opacity", 0.6)
+              .call(function(e) { e.transition().duration(800)
+                .attr("x2", function(d) { return d.x2; }).attr("y2", function(d) { return d.y2; }); }); },
+            function(update) { return update.call(function(u) { u.transition().duration(800)
+              .attr("x1", function(d) { return d.x1; }).attr("y1", function(d) { return d.y1; })
+              .attr("x2", function(d) { return d.x2; }).attr("y2", function(d) { return d.y2; }); }); },
+            function(exit) { return exit.transition().duration(300).attr("opacity", 0).remove(); }
+          );
+
+          var compPointGroups = comparePointLayer.selectAll("g.comp-point").data(compPoints, function(d) { return d.concept; });
+          var enteredComp = compPointGroups.enter()
+            .append("g").attr("class", "comp-point").style("cursor", "pointer")
+            .on("mousemove", function(event, d) {
+              tooltip.style("opacity", 1)
+                .style("left", (event.offsetX + 16) + "px")
+                .style("top", (event.offsetY + 16) + "px")
+                .html('<strong>' + d.concept + '</strong><br><span style="color:' + d.color + '">\u2b21 ' + d.clusterLabel + '</span> (' + compData.label + ')');
+            })
+            .on("mouseleave", function() { tooltip.style("opacity", 0); });
+
+          enteredComp.append("circle")
+            .attr("r", 0).attr("fill", "none")
+            .attr("stroke", function(d) { return d.color; }).attr("stroke-width", 2)
+            .transition().duration(800).attr("r", 7);
+
+          var mergedComp = enteredComp.merge(compPointGroups);
+          mergedComp.transition().duration(800)
+            .attr("transform", function(d) { return "translate(" + d.sx + "," + d.sy + ")"; });
+          mergedComp.select("circle").transition().duration(800)
+            .attr("stroke", function(d) { return d.color; });
+          compPointGroups.exit().transition().duration(300).attr("opacity", 0).remove();
+
+          legendForComparison(currentPersona, comparePersona);
+        } else {
+          compareHullLayer.selectAll("*").transition().duration(300).attr("opacity", 0).remove();
+          comparePointLayer.selectAll("*").transition().duration(300).attr("opacity", 0).remove();
+          lineLayer.selectAll("*").transition().duration(300).attr("opacity", 0).remove();
+          legendFor(currentPersona);
+        }
+      }
+
+      function legendForComparison(primaryKey, compKey) {
+        var legend = document.getElementById("cluster-legend");
+        legend.innerHTML = "";
+        var primary = window.personaData[primaryKey];
+        var comp = window.personaData[compKey];
+
+        var header1 = document.createElement("span");
+        header1.textContent = "\u25cf " + primary.label;
+        header1.style.color = "#ff79c6";
+        header1.style.fontWeight = "700";
+        header1.style.fontSize = "0.44em";
+        legend.appendChild(header1);
+
+        Object.values(primary.clusters).forEach(function(cluster) {
+          var el = document.createElement("span");
+          el.textContent = cluster.label;
+          el.style.background = cluster.color + "22";
+          el.style.color = cluster.color;
+          legend.appendChild(el);
+        });
+
+        var sep = document.createElement("span");
+        sep.textContent = "vs";
+        sep.style.color = "#8b949e";
+        sep.style.fontSize = "0.4em";
+        legend.appendChild(sep);
+
+        var header2 = document.createElement("span");
+        header2.textContent = "\u25cb " + comp.label;
+        header2.style.color = "#bd93f9";
+        header2.style.fontWeight = "700";
+        header2.style.fontSize = "0.44em";
+        legend.appendChild(header2);
+
+        Object.values(comp.clusters).forEach(function(cluster) {
+          var el = document.createElement("span");
+          el.textContent = cluster.label;
+          el.style.background = cluster.color + "11";
+          el.style.color = cluster.color;
+          el.style.borderStyle = "dashed";
+          legend.appendChild(el);
+        });
+      }
+
+      // --- Initialize Reveal.js immediately (non-blocking) ---
       Reveal.initialize({
         hash: true,
         slideNumber: true,
@@ -1396,12 +1431,169 @@ fi
         plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
       });
 
-      Reveal.on("ready", ensurePersonaViz);
-      Reveal.on("slidechanged", (event) => {
+      Reveal.on("slidechanged", function(event) {
         if (event.currentSlide && event.currentSlide.querySelector("#persona-viz")) {
-          ensurePersonaViz();
-          switchPersona(currentPersona);
+          if (window.embeddingsReady) ensurePersonaViz();
         }
+      });
+    </script>
+
+    <!-- Embeddings loaded async in module - does NOT block Reveal.js -->
+    <script type="module">
+      import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+      var CONCEPTS = [
+        "Authentication", "Access Control", "Encryption",
+        "Input Sanitization", "Data Validation", "Error Handling",
+        "Logging", "Monitoring", "Performance",
+        "Testing", "Code Review", "Documentation", "API Design"
+      ];
+
+      var PERSONA_CONFIGS = {
+        security: {
+          label: "Security Engineer",
+          template: function(c) { return "As a security engineer, " + c + " is critical because it protects systems from unauthorized access, data breaches, and vulnerabilities in production environments."; },
+          clusterColors: ["#ff79c6", "#8be9fd", "#50fa7b", "#bd93f9"]
+        },
+        developer: {
+          label: "Developer",
+          template: function(c) { return "As a software developer, " + c + " is important for building reliable, maintainable code that ships features quickly and handles edge cases gracefully."; },
+          clusterColors: ["#8be9fd", "#50fa7b", "#ffb86c", "#ff79c6"]
+        },
+        product: {
+          label: "Product Manager",
+          template: function(c) { return "As a product manager, " + c + " matters because it affects user experience, business metrics, customer trust, and the ability to iterate on features rapidly."; },
+          clusterColors: ["#ffb86c", "#50fa7b", "#ff79c6", "#bd93f9"]
+        },
+        educator: {
+          label: "Educator",
+          template: function(c) { return "As a computer science educator, " + c + " is a foundational topic that students must understand to write professional-quality software and reason about system design."; },
+          clusterColors: ["#8be9fd", "#50fa7b", "#ffb86c", "#bd93f9"]
+        }
+      };
+
+      function pca2D(vectors) {
+        var n = vectors.length, dim = vectors[0].length;
+        var mean = new Float32Array(dim);
+        vectors.forEach(function(v) { for (var i = 0; i < dim; i++) mean[i] += v[i] / n; });
+        var centered = vectors.map(function(v) { return v.map(function(val, i) { return val - mean[i]; }); });
+
+        function powerIteration(matrix, deflate) {
+          var vec = Array.from({ length: dim }, function() { return Math.random() - 0.5; });
+          for (var iter = 0; iter < 100; iter++) {
+            var newVec = new Array(dim).fill(0);
+            matrix.forEach(function(row) {
+              var dot = 0;
+              for (var i = 0; i < dim; i++) dot += row[i] * vec[i];
+              for (var i = 0; i < dim; i++) newVec[i] += row[i] * dot;
+            });
+            if (deflate) {
+              var proj = newVec.reduce(function(s, v, i) { return s + v * deflate[i]; }, 0);
+              for (var i = 0; i < dim; i++) newVec[i] -= proj * deflate[i];
+            }
+            var norm = Math.sqrt(newVec.reduce(function(s, v) { return s + v * v; }, 0));
+            vec = newVec.map(function(v) { return v / norm; });
+          }
+          return vec;
+        }
+
+        var pc1 = powerIteration(centered);
+        var pc2 = powerIteration(centered, pc1);
+        return centered.map(function(row) {
+          return [
+            row.reduce(function(s, v, i) { return s + v * pc1[i]; }, 0),
+            row.reduce(function(s, v, i) { return s + v * pc2[i]; }, 0)
+          ];
+        });
+      }
+
+      function kMeans(points2D, k, maxIter) {
+        k = k || 4; maxIter = maxIter || 50;
+        var centroids = [];
+        var sorted = points2D.slice().sort(function(a, b) { return a[0] - b[0]; });
+        for (var i = 0; i < k; i++) centroids.push(sorted[Math.floor(i * sorted.length / k)].slice());
+
+        var assignments = new Array(points2D.length).fill(0);
+        for (var iter = 0; iter < maxIter; iter++) {
+          var changed = false;
+          for (var i = 0; i < points2D.length; i++) {
+            var minDist = Infinity, best = 0;
+            for (var c = 0; c < k; c++) {
+              var dx = points2D[i][0] - centroids[c][0], dy = points2D[i][1] - centroids[c][1];
+              if (dx * dx + dy * dy < minDist) { minDist = dx * dx + dy * dy; best = c; }
+            }
+            if (assignments[i] !== best) { assignments[i] = best; changed = true; }
+          }
+          if (!changed) break;
+          for (var c = 0; c < k; c++) {
+            var sx = 0, sy = 0, count = 0;
+            for (var i = 0; i < points2D.length; i++) {
+              if (assignments[i] === c) { sx += points2D[i][0]; sy += points2D[i][1]; count++; }
+            }
+            if (count > 0) centroids[c] = [sx / count, sy / count];
+          }
+        }
+        return assignments;
+      }
+
+      async function loadEmbeddings() {
+        var statusEl = document.getElementById("embed-status");
+        if (statusEl) statusEl.textContent = "Loading model (~23MB)\u2026";
+
+        var embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        if (statusEl) statusEl.textContent = "Computing embeddings\u2026";
+
+        var personaKeys = Object.keys(PERSONA_CONFIGS);
+        for (var p = 0; p < personaKeys.length; p++) {
+          var personaKey = personaKeys[p];
+          var config = PERSONA_CONFIGS[personaKey];
+          var sentences = CONCEPTS.map(function(c) { return config.template(c); });
+          var results = await embedder(sentences, { pooling: 'mean', normalize: true });
+
+          var embeddings = [];
+          for (var i = 0; i < CONCEPTS.length; i++) {
+            embeddings.push(Array.from(results[i].data));
+          }
+
+          var coords2D = pca2D(embeddings);
+          var xs = coords2D.map(function(c) { return c[0]; });
+          var ys = coords2D.map(function(c) { return c[1]; });
+          var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+          var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+          var pad = 10;
+          var normalized = coords2D.map(function(pt) {
+            return [
+              pad + (pt[0] - xMin) / (xMax - xMin || 1) * (100 - 2 * pad),
+              pad + (pt[1] - yMin) / (yMax - yMin || 1) * (100 - 2 * pad)
+            ];
+          });
+
+          var clusterAssignments = kMeans(normalized, 4);
+          var clusterNames = {};
+          for (var c = 0; c < 4; c++) {
+            var members = CONCEPTS.filter(function(_, i) { return clusterAssignments[i] === c; });
+            clusterNames["c" + c] = {
+              label: members.slice(0, 2).join(" / ") + (members.length > 2 ? " \u2026" : ""),
+              color: config.clusterColors[c]
+            };
+          }
+
+          var points = CONCEPTS.map(function(concept, i) {
+            return { concept: concept, x: normalized[i][0], y: normalized[i][1], cluster: "c" + clusterAssignments[i] };
+          });
+
+          window.personaData[personaKey] = { label: config.label, clusters: clusterNames, points: points };
+        }
+
+        window.embeddingsReady = true;
+        if (statusEl) statusEl.textContent = "";
+        ensurePersonaViz();
+      }
+
+      loadEmbeddings().catch(function(err) {
+        console.error("Embedding load failed:", err);
+        var statusEl = document.getElementById("embed-status");
+        if (statusEl) statusEl.textContent = "Failed to load model. Check console.";
       });
     </script>
   </body>
