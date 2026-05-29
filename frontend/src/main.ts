@@ -1,11 +1,11 @@
 /**
  * Island Registry and Auto-Mount System
- * 
+ *
  * This is the core of the React Islands architecture. It:
  * 1. Scans the DOM for [data-island] elements
  * 2. Dynamically imports the corresponding island module
  * 3. Mounts the React component with props from data-props
- * 
+ *
  * Why Islands?
  * - Progressive enhancement: HTML works without JS
  * - Partial hydration: Only load JS for interactive parts
@@ -25,7 +25,7 @@ interface IslandModule {
  * Add new islands here as they are created.
  */
 const islandRegistry: Record<string, () => Promise<IslandModule>> = {
-  hello: () => import('./islands/hello'),
+  game: () => import('./islands/game'),
 }
 
 /**
@@ -35,7 +35,7 @@ const islandRegistry: Record<string, () => Promise<IslandModule>> = {
 function parseProps(element: HTMLElement): unknown {
   const propsAttr = element.getAttribute('data-props')
   if (!propsAttr) return {}
-  
+
   try {
     return JSON.parse(propsAttr)
   } catch (e) {
@@ -50,17 +50,17 @@ function parseProps(element: HTMLElement): unknown {
  */
 async function mountIslands(): Promise<void> {
   const islands = document.querySelectorAll<HTMLElement>('[data-island]')
-  
+
   for (const element of islands) {
     const islandName = element.getAttribute('data-island')
     if (!islandName) continue
-    
+
     const importFn = islandRegistry[islandName]
     if (!importFn) {
       console.warn(`Unknown island: ${islandName}`)
       continue
     }
-    
+
     try {
       const module = await importFn()
       const props = parseProps(element)

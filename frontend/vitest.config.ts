@@ -4,7 +4,7 @@ import path from 'path'
 
 /**
  * Vitest configuration for React component testing.
- * 
+ *
  * Uses jsdom to simulate browser environment.
  * Path aliases match vite.config.ts for consistency.
  */

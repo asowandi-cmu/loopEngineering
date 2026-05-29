@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Ralph Wiggum Tutorial{% endblock %}</title>
-    
+
     {% block head %}{% endblock %}
-    
+
     {# Vite Integration: Load assets from dev server or built manifest #}
     {% if config.VITE_DEV_MODE %}
         {# Development: Load from Vite dev server with HMR #}
@@ -28,7 +28,7 @@
 </head>
 <body class="min-h-screen bg-gray-50">
     {% block content %}{% endblock %}
-    
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

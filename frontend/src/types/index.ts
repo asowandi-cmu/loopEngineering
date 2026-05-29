@@ -1,37 +1,17 @@
 /**
  * Shared TypeScript types for the application.
- * 
- * These types are used across islands, components, and API interactions.
+ *
+ * These types are used across islands and components. Game-specific types
+ * live in `frontend/src/game/types.ts` so the framework-agnostic engine has
+ * no dependency on app-level concerns.
  */
 
 /**
- * Hello record from the API.
- */
-export interface Hello {
-  id: number
-  message: string
-  created_at: string
-}
-
-/**
- * Request payload for creating a new Hello.
- */
-export interface HelloCreate {
-  message: string
-}
-
-/**
- * Generic API error response.
- */
-export interface ApiError {
-  error: string
-  message: string
-  details?: Record<string, unknown>[]
-}
-
-/**
- * Props passed to islands via data-props attribute.
- * Each island receives its initial data from the server.
+ * Props passed to islands via the `data-props` attribute.
+ *
+ * Each island receives its initial data from the server. The Space Invaders
+ * game needs no server data (it is fully client-side), but the type is kept
+ * generic so future islands can pass typed initial state.
  */
 export type IslandProps<T = unknown> = {
   initialData?: T

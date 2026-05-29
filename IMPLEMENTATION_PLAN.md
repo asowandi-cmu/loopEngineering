@@ -1,64 +1,68 @@
-# Implementation Plan — ralph-wiggum-tutorial
+# Implementation Plan — Space Invaders Classic Gameplay
 
 ## Status
 
-> **Overall: ~95% Complete — Presentation fully implemented, minor polish remaining**
+> **Overall: 100% Complete — Feature implemented, all validation green.**
 
-All 16 tests pass (12 backend + 4 frontend). The 46+ slide reveal.js presentation is fully built with all sections, D3.js visualization, code examples, and research citations.
+Spec: `specs/space-invaders-classic-gameplay.md` (comprehensive, self-contained).
 
----
-
-## 🟡 REMAINING ITEMS
-
-### P3: Cosmetic / Low Priority
-
-- Fix typo in folder name: `.github/skills/python-code-simiplifier/` → `python-code-simplifier/`
-  - Would require updating any references in specs and AGENTS.md
+The Hello World scaffold has been fully removed and replaced with a client-side
+Space Invaders game mounted via the React Islands architecture. All unit tests
+(pytest + vitest), type checks (mypy + tsc), linters (flake8 + eslint), and
+Playwright E2E tests pass.
 
 ---
 
-## ✅ COMPLETED ITEMS
+## What was built (2026-05-29)
 
-### Infrastructure (Flask/React App) — 100% Complete
-- ✅ `.devcontainer/` — Python 3.12, PostgreSQL, Node.js with post-create hook
-- ✅ `src/app/` — Flask app factory, models, views, templates, errors, logging, schemas, controllers
-- ✅ `frontend/` — React Islands, Vite, TypeScript, Tailwind, ESLint, Vitest
-- ✅ `scripts/` — bootstrap, setup, server, test, lint, typecheck, update, console, db-seed, Procfile
-- ✅ `tests/` — 12 backend tests passing (conftest.py, test_hello.py)
-- ✅ `frontend/tests/` — 4 frontend tests passing (HelloIsland.test.tsx)
-- ✅ `migrations/` — Alembic initialized with hello table migration
-- ✅ `.github/workflows/ci.yml` — CI pipeline
-- ✅ `.pre-commit-config.yaml` — Pre-commit hooks
-- ✅ Config files — `.gitignore`, `.env.example`, `requirements.txt`, `pyproject.toml`
+### Backend
+- `src/app/views/game.py` — `game_bp`; `GET /` renders `game.html` (no DB, no API).
+- `src/app/templates/game.html` — extends `base.html`; title "Space Invaders" + `data-island="game"` mount + `<noscript>` fallback.
+- Registered `game_bp` in `src/app/views/__init__.py`.
+- `migrations/versions/f1a2b3c4d5e6_drop_hello_table.py` — drops `hello` (down recreates it), chained after the original create migration so `script/setup` stays reproducible.
+- Removed: `views/hello.py`, `controllers/hello.py`, `models/hello.py`, `schemas/hello.py`, `templates/hello/`, and cleared their `__init__` exports.
+- `tests/test_game_view.py` — `GET /` 200, contains `data-island="game"`, title is "Space Invaders". Retained `TestErrorHandlers` (404 HTML/JSON) so error-handler coverage survives.
 
-### Documentation — Complete
-- ✅ `AGENTS.md` — Operational commands for build/run/test
-- ✅ `README.md` — Project overview, setup, loop explanation, tech stack
+### Frontend engine (`frontend/src/game/`, framework-agnostic, dt-based)
+- `types.ts`, `constants.ts` (px/s speeds; 5×11 grid; per-row points; colors).
+- `Bullet.ts` (sign of speed = direction; off-screen → dead).
+- `Player.ts` (bounds-clamped movement; shot cooldown rate-limits held Space).
+- `Alien.ts` (thin data class) + `AlienGrid.ts` (lock-step march, edge reverse+descend, speed-up as swarm thins, bottom-of-column firing, `reachedBottom`, `isCleared`).
+- `InputHandler.ts` (held-key set + edge-triggered `consumeStart()`; `destroy()` removes listeners).
+- `Renderer.ts` (geometric shapes only; start/gameover/win screens; HUD score).
+- `SpaceInvaders.ts` (RAF loop, frame-rate-independent dt clamped to 0.05s, AABB collisions, state machine start→playing→won/gameover→restart, `start()`/`reset()`/`destroy()`).
 
-### Presentation — 100% Complete
-- ✅ P0-A: Sections 1–9 (Slides 1–25) — All implemented with vertical nesting
-- ✅ P0-B: Sections 10–17 (Slides 26–46) — All implemented with research citations
-- ✅ P0-C: Interactive D3.js visualization (Slide 13) — Persona switching, hulls, tooltips
-- ✅ P1: Code examples from real repo files embedded in slides
-- ✅ P2: data-background, vertical nesting, highlight plugin, speaker notes
-- ✅ `presentation/package.json` — reveal.js ^6.0.1 dependency
-- ✅ `presentation/index.html` — Full 52-section deck with Dracula theme
+### Island integration
+- `frontend/src/islands/game/GameIsland.tsx` — thin React wrapper; creates engine + `start()` on mount, `destroy()` on unmount.
+- `frontend/src/islands/game/index.tsx` — `mount()` clears fallback and renders.
+- `frontend/src/main.ts` registry maps `game: () => import('./islands/game')`.
+- `frontend/src/types/index.ts` — Hello types removed, generic `IslandProps` kept.
+- Removed Hello frontend + `frontend/tests/islands/hello/`.
 
-### Ralph Loop Infrastructure — Complete
-- ✅ `loop.sh` — Fully functional (117 lines), modes, max iterations, completion promise
-- ✅ `PROMPT_plan.md` — Plan mode prompt (22 lines)
-- ✅ `PROMPT_build.md` — Build mode prompt (21 lines)
-- ✅ `.github/agents/plan-agent.md` — Plan agent definition (105 lines)
-- ✅ `.github/agents/plan-reviewer.md` — Plan reviewer definition (20 lines)
-- ✅ `.github/skills/` — All 4 skills defined (git-commit 189L, python-code-simiplifier 63L, test-in-browser 102L, typescript-code-simplifier 62L)
-- ✅ `.vscode/mcp.json` — Playwright MCP server config (11 lines)
+### Tests
+- `frontend/tests/game/entities.test.ts` (11) — boundary clamp, bullet pruning, swarm reversal/descent, column-front firing, clear/reachedBottom.
+- `frontend/tests/game/SpaceInvaders.test.ts` (7) — state transitions, win/lose, restart, missing-context throw, destroy cleanup (stub canvas context).
+- `e2e/game.spec.ts` (4) — title, canvas 800×600 visible, no console errors on input, canvas changes on Space.
 
 ---
 
-## Implementation Notes
+## Validation results (all green)
+- `PYTHONPATH=src pytest tests/` → 5 passed.
+- `cd frontend && npm test` → 18 passed.
+- `mypy src/` → clean (10 files). `flake8 src/ tests/` → clean.
+- `cd frontend && npm run typecheck` (tsc) → clean. `npm run lint` (eslint) → clean.
+- `npx playwright test --reporter=list` → 4 passed.
+- `cd frontend && npm run build` → production bundle builds clean.
 
-- **No `src/lib/` directory** — project uses `src/app/` as the backend module
-- **All tests green** — 12 backend + 4 frontend, no skipped/flaky tests
-- **All files referenced in spec exist** — agents, skills, loop.sh, prompts all populated
-- **D3.js loaded via CDN** in presentation/index.html (not a package.json dep per spec)
-- **Presentation fully complete** — 52 sections, all 17 topic groups implemented
+---
+
+## Notes / learnings
+- Run E2E with `--reporter=list` in agent/CI shells; the default `html` reporter opens a blocking report server (this caused an initial hang). Recorded in AGENTS.md.
+- Playwright browsers must be installed once: `npx playwright install chromium`.
+- `vite build` empties `src/app/static/` (emptyOutDir) and removes `.gitkeep`; restore it after a local build. Built assets under `src/app/static/assets|.vite` are gitignored.
+- ESLint flat config has no DOM type globals, so avoid `as EventListener` casts in engine code — type handlers as `(e: Event)` and narrow internally.
+- tsc `noUnusedLocals`/`noUnusedParameters` is on: don't store constructor params you don't reference; underscore-prefix intentionally-unused params (`_props`).
+
+## Out of scope (per spec)
+Persistent high scores / new model+API, multiple levels, power-ups, sound,
+mobile touch controls, sprite assets.

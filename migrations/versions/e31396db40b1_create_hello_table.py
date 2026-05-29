@@ -1,7 +1,7 @@
 """create hello table
 
 Revision ID: e31396db40b1
-Revises: 
+Revises:
 Create Date: 2026-03-17 13:24:38.786893
 
 """

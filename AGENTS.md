@@ -28,7 +28,8 @@ IMPORTANT ALWAYS RUN these after implementing to get immediate feedback:
 - Tests: `script/test` → `pytest` + `vitest`
   - Direct: `PYTHONPATH=src pytest tests/` (backend) + `cd frontend && npm test` (frontend)
 - E2E: `script/test-e2e` → Playwright browser tests
-  - Direct: `npx playwright test` (auto-starts dev servers)
+  - Direct: `npx playwright test --reporter=list` (auto-starts dev servers; use `--reporter=list` in non-interactive shells — the default `html` reporter opens a blocking report server that hangs CI/agents)
+  - First run needs browsers: `npx playwright install chromium`
   - UI mode: `script/test-e2e --ui`
 - Typecheck: `script/typecheck` → `mypy` + `tsc`
   - Direct: `mypy src/ --ignore-missing-imports` + `cd frontend && npm run typecheck`
