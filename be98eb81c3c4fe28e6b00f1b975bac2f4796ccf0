@@ -1,0 +1,58 @@
+Trading Journal Phase 1 — implementation log (for future loops)
+
+WHY denormalized derived columns (ticks/gross_pnl/net_pnl stored on the row):
+- stats endpoint aggregates in SQL (SUM/COUNT/AVG) with no per-row Python;
+- each row is a stable historical snapshot next to the exact tick_size/tick_value
+  used, so editing a future trade never rewrites past P&L;
+- frontend renders authoritative numbers without re-deriving.
+Drift is prevented because controllers/trade.py is the ONLY write path and always
+recomputes via compute_pnl on create/update; there is no API to set them directly.
+
+THE ONE CONVENTION (identical in backend compute_pnl, frontend pnl.ts, all tests):
+  direction   = +1 long / -1 short
+  ticks_moved = (exit_price - entry_price) / tick_size     # signed by price
+  ticks       = ticks_moved * direction                    # per-contract, signed by P&L
+  gross_pnl   = ticks * tick_value * contracts             # multiplier hits DOLLARS ONLY
+  net_pnl     = gross_pnl - fees
+Canonical: ES long 5000->5010, tick 0.25, $12.5/tick, 2 contracts, $4.5 fees =>
+ticks 40, gross 1000.00, net 995.50. Do NOT multiply ticks by contracts.
+
+DECISIONS / GOTCHAS worth remembering:
+- Money precision: SQLAlchemy Numeric + Python Decimal everywhere; quantize to
+  column scales on write (_TICKS_Q/_MONEY_Q = 0.0001).
+- compute_stats: SQLite returns float from SUM over Numeric; Postgres returns
+  Decimal. _dec() routes every aggregate through str() so Decimal stays exact
+  (Decimal(float) would inject binary-float noise). Empty journal => all zeros,
+  win_rate/avg_win/avg_loss guarded against divide-by-zero. scratch (net==0) is
+  neither win nor loss; win_rate denominator is total trades.
+- Datetimes stored naive-UTC (models._utcnow + controller _to_naive_utc) so
+  SQLite and Postgres DateTime columns round-trip identically.
+- TradeResponse/StatsResponse fields are float (not Decimal) so model_dump(mode=
+  'json') emits plain JSON numbers matching the spec examples; Decimal in the DB
+  remains the source of truth. Tests assert with tolerance.
+- View emits its own 400 (with fields map) and 404 JSON directly rather than
+  abort(), so the fields map and JSON content-type are deterministic regardless
+  of the request Accept header. errors.py stays the fallback for unrouted paths.
+- Schema uses extra='ignore' so client-sent ticks/gross_pnl/net_pnl are dropped.
+- Validator messages are terse ("must be greater than 0"); the view strips the
+  Pydantic "Value error, " prefix when building the fields map.
+
+FRONTEND lint/type gotchas (this repo's config):
+- tsconfig includes only "src"; frontend tests are NOT tsc/eslint checked.
+- eslint (js.configs.recommended, no typescript-eslint recommended) fires
+  no-undef on TS-only globals: import type { FormEvent, ReactNode } from 'react'
+  instead of React.X; type fetch's init as Parameters<typeof fetch>[1] instead of
+  naming RequestInit.
+- pnl.ts is float math (display-only preview) — its fractional-ticks test asserts
+  with toBeCloseTo, not exact equality (backend Decimal is authoritative).
+- Form controls have name="<field>" so Playwright/tests select them reliably.
+
+RUN/VALIDATION:
+- Backend needs the trades table: flask db upgrade (env exported) or script/setup.
+- E2E: npx playwright test --reporter=list (default html reporter hangs agents);
+  it persists a real row to the dev Postgres DB.
+- All green: pytest 42, vitest 23, playwright 2, mypy strict + tsc, flake8 + eslint.
+
+Phase 2 (NOT built): broker/CSV import, instruments table + auto-fill, open
+positions (nullable exit + status), multi-user/auth, charts. compute_pnl is
+designed to remain the single source of truth for imported trades too.
