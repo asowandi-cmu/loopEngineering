@@ -1,5 +1,17 @@
 """Pydantic schemas package.
 
-Exports all request/response schemas for API validation.
+Exports request/response schemas for the Trading Journal API.
 """
-__all__: list[str] = []
+from .trade import (
+    StatsResponse,
+    TradeCreate,
+    TradeResponse,
+    TradeUpdate,
+)
+
+__all__ = [
+    'TradeCreate',
+    'TradeUpdate',
+    'TradeResponse',
+    'StatsResponse',
+]

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Trading Journal{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Trading Journal</h1>
+
+    {# React Island Mount Point #}
+    {# main.ts finds this element and mounts the JournalIsland, which fetches #}
+    {# trades + stats from the JSON API and renders the stats header, the #}
+    {# add/edit form (with a live P&L preview), and the editable trades table. #}
+    <div data-island="journal">
+        {# Fallback shown before JavaScript hydrates the island. #}
+        <noscript>
+            <p class="text-gray-600">JavaScript is required to use the Trading Journal.</p>
+        </noscript>
+    </div>
+</main>
+{% endblock %}

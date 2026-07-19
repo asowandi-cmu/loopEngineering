@@ -1,8 +1,8 @@
 #!/bin/bash
 # script/db-seed - Seed database with development data
 #
-# Creates example records in the database for development/testing.
-# Safe to run multiple times - uses upsert logic where appropriate.
+# Creates example trades in the database for development/testing.
+# Safe to run multiple times - skips seeding if trades already exist.
 
 set -e
 
@@ -17,25 +17,50 @@ export FLASK_APP=src/app:create_app
 
 echo "==> Seeding database..."
 
-python << 'EOF'
+PYTHONPATH=src python << 'EOF'
+from datetime import datetime
+
 from app import create_app
-from app.models import db, Hello
+from app.controllers.trade import create_trade, list_trades
+from app.schemas.trade import TradeCreate
+
+# Representative sample trades (a winner, a loser, and a short) so the journal
+# and stats header have data to render in development.
+SAMPLES = [
+    {
+        "symbol": "ES", "product_name": "E-mini S&P 500", "side": "long",
+        "contracts": 2, "entry_price": "5000.00", "exit_price": "5010.00",
+        "tick_size": "0.25", "tick_value": "12.50",
+        "entry_at": datetime(2026, 7, 19, 13, 30),
+        "exit_at": datetime(2026, 7, 19, 14, 5),
+        "fees": "4.50", "strategy": "ORB", "notes": "clean breakout",
+    },
+    {
+        "symbol": "NQ", "product_name": "E-mini Nasdaq-100", "side": "short",
+        "contracts": 1, "entry_price": "18000.00", "exit_price": "17990.00",
+        "tick_size": "0.25", "tick_value": "5.00",
+        "entry_at": datetime(2026, 7, 19, 15, 0),
+        "exit_at": datetime(2026, 7, 19, 15, 20),
+        "fees": "2.10", "strategy": "fade", "notes": "",
+    },
+    {
+        "symbol": "CL", "product_name": "Crude Oil", "side": "long",
+        "contracts": 1, "entry_price": "75.00", "exit_price": "74.90",
+        "tick_size": "0.01", "tick_value": "10.00",
+        "entry_at": datetime(2026, 7, 18, 10, 0),
+        "exit_at": datetime(2026, 7, 18, 10, 45),
+        "fees": "2.10", "strategy": "trend", "notes": "stopped out",
+    },
+]
 
 app = create_app()
 with app.app_context():
-    # Check if data already exists
-    if Hello.query.count() == 0:
-        # Add sample greetings
-        samples = [
-            Hello(message="Hello, World!"),
-            Hello(message="Welcome to Ralph Wiggum Tutorial"),
-            Hello(message="React Islands are awesome!"),
-        ]
-        db.session.add_all(samples)
-        db.session.commit()
-        print(f"Added {len(samples)} sample greetings")
+    if list_trades():
+        print("Database already has trades, skipping seed")
     else:
-        print("Database already has data, skipping seed")
+        for sample in SAMPLES:
+            create_trade(TradeCreate.model_validate(sample))
+        print(f"Added {len(SAMPLES)} sample trades")
 EOF
 
 echo "==> Database seeded!"
