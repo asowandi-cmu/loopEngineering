@@ -1,6 +1,6 @@
 """Flask application factory and initialization."""
 import os
-from flask import Flask
+from flask import Flask, Response
 from .config import config
 from .models.base import db
 from .logging_config import configure_logging
@@ -42,5 +42,18 @@ def create_app(config_name: str | None = None) -> Flask:
     # Register blueprints
     from .views import register_blueprints
     register_blueprints(app)
+
+    # Serve an inline SVG favicon so browsers' automatic /favicon.ico
+    # request doesn't 404 (which the error handler logs as a warning).
+    _FAVICON = (
+        b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+        b'<rect width="16" height="16" rx="3" fill="#1f2937"/>'
+        b'<path d="M3 11l3-3 2 2 5-5" stroke="#34d399" stroke-width="1.5" '
+        b'fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    )
+
+    @app.route('/favicon.ico')
+    def favicon() -> Response:
+        return Response(_FAVICON, mimetype='image/svg+xml')
 
     return app
