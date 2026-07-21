@@ -1,1 +1,3 @@
 1. Use the plan agent: plan and produce a specification for a trading journal, which will replace the current hello world in the current repo. We will have two phase: phase 1 add trade manually and phase 2 is automated. Now we will only focus on phase 1. We will built only on futures contract with manual per-tick input by customer.
+
+2. Use the plan agent: plan and produce specification for phase 2 of the project, which allows automated trading entries through dxfeed prop connection. I'm using Futures Elite to trade prop firm.
