@@ -134,6 +134,11 @@ class TradeResponse(BaseModel):
     net_pnl: float
     strategy: str | None
     notes: str | None
+    # Phase 2 source/dedupe fields (manual trades: 'manual'/None/'ok'/None).
+    source: str
+    external_id: str | None
+    review_status: str
+    duplicate_of: int | None
     created_at: datetime
     updated_at: datetime
 

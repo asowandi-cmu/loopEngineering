@@ -1,0 +1,4 @@
+[
+  {"external_exec_id": "U1", "account": "ACC1", "symbol": "XYZ", "action": "buy", "quantity": 1, "price": "100.00", "fee": "0.50", "executed_at": "2026-07-20T17:00:00Z"},
+  {"external_exec_id": "U2", "account": "ACC1", "symbol": "XYZ", "action": "sell", "quantity": 1, "price": "101.00", "fee": "0.50", "executed_at": "2026-07-20T17:10:00Z"}
+]

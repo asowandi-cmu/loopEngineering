@@ -37,30 +37,81 @@ This is **reused unchanged** by all of Phase 2.
 
 ---
 
-## Phase 2 — NOT STARTED (automated DXtrade fill sync)
+## Phase 2 — IN PROGRESS (automated DXtrade fill sync)
 
-### Gap analysis (re-verified 2026-07-21 against current `src/*`, `frontend/*`, `migrations/*`)
-Phase 2 is entirely greenfield — re-confirmed by code search 2026-07-21, nothing
-is partially built (migration head is `a1b2c3d4e5f6`, chaining
-`f1a2b3c4d5e6`; `TestingConfig` sets `TESTING`+`DEBUG`, `DevelopmentConfig` sets
-`DEBUG`, and `ProductionConfig` sets `DEBUG=False` with no `TESTING` — so the
-guarded `_test/ingest` route registers in test/dev and is correctly absent in
-production. Re-audited independently 2026-07-21: `grep` for
-`reconcil|broker_fill|sync_state|instrument|external_id|TradeSource|dxtrade`
-across `src/` and `frontend/src/` returns zero matches):
-- No `src/app/sources/`, no `src/app/worker/`.
-- No `controllers/reconciliation.py`, `controllers/instrument.py`, `controllers/sync.py`.
-- No `models/instrument.py`, `models/broker_fill.py`, `models/sync_state.py`; the
-  `Trade` model (`models/trade.py`) has **no** `source`/`external_id`/
-  `review_status`/`duplicate_of` columns.
-- No `views/sync.py`; `views/__init__.py` registers only `journal_bp`.
-- Migration head is `a1b2c3d4e5f6_create_trades_table` — this is exactly the
-  `down_revision` the Phase 2 migration should chain onto. ✅
-- `Procfile` has only a `web:` line (no `worker:`); `requirements.txt` lacks
-  `websockets`/`httpx`; `config.py` has no `DXTRADE_*`/worker settings; there is
-  no `script/worker`.
-- Frontend `journal/types.ts` has no `source`/`review_status`/`SyncStatus`
-  types; no `ConnectionPanel.tsx`/`SourceBadge.tsx`/`sync.ts`.
+### Progress log
+- **2026-07-21 — API surface landed (P3: sync controller + schemas + blueprint).**
+  Full suite now **77 pytest green** (was 63); mypy(strict)+flake8 clean.
+  - **`schemas/sync.py`** — `CredentialsPayload` (write-only, strips+rejects blank
+    username/password/domain), `SyncCounts`, `SyncStatusResponse`,
+    `ReconcileResultResponse`, `InstrumentResponse`. Exported from `schemas/__init__`.
+    `TradeResponse` already had `source`/`external_id`/`review_status`/`duplicate_of`.
+  - **`controllers/sync.py`** — `get_sync_state` (creates the id=1 singleton on
+    first access so `db.create_all()` test DBs match migrated ones), `set_enabled`
+    (desired state only; worker owns `status`), `record_status` (worker→DB writeback,
+    sets `last_synced_at` while streaming), `status_counts`
+    (trades_dxtrade/fills/needs_review), `load_credentials`/`credentials_configured`/
+    `save_credentials` (env is source of truth **per-field**, write-through to the
+    gitignored secret file, mode 0600; password never returned), `import_csv`
+    (CSV→`ingest_fills(source='csv')`). Exported from `controllers/__init__`.
+  - **`views/sync.py`** (`sync_bp`) — `GET /api/sync/status`, `POST connect`
+    (400 if creds unconfigured) / `disconnect` / `credentials` (204, no echo) /
+    `import` (multipart `file`; 400 on `TradeSourceError`) / `reconcile`,
+    `GET /api/instruments`, and the **guarded** `POST /api/sync/_test/ingest`
+    attached via `attach_test_routes(app)` **only** when `TESTING`/`DEBUG` (genuinely
+    absent → 404 in production). Reuses `journal.py`'s `_validation_error`.
+    Registered in `views/__init__.py`.
+  - **`config.py`** — added `DXTRADE_SECRET_FILE` (default `.secrets/dxtrade.json`)
+    + `DXTRADE_USERNAME/PASSWORD/DOMAIN/BASE_URL/WS_URL` env reads (partial P5 config,
+    needed now for credential handling). `.gitignore` now ignores `.secrets/` +
+    `dxtrade.json`.
+  - **`tests/test_sync_view.py`** (14) — status shape, connect-needs-creds,
+    creds write-only + connect/disconnect toggle `enabled`, import counts +
+    missing-file/malformed 400, reconcile-after-spec-seed, instruments list,
+    `_test/ingest` pipeline + replay-dedupe, non-list 400, **guarded route 404 in
+    production config**, status counts reflect ingest, needs_review counted.
+  - **Design note:** connect/disconnect write only `sync_state.enabled` (the desired
+    state); the worker is the sole writer of `status`. Tests that need a temp secret
+    file override `app.config['DXTRADE_SECRET_FILE']` via `tmp_path`.
+- **2026-07-21 — Data foundation + core pipeline landed (P0/P1/P2/P4-csv).**
+  Migration head is now `b2c3d4e5f6a7_add_source_and_broker_sync` (chains
+  `a1b2c3d4e5f6`; applied + reversed cleanly on SQLite). Shipped this increment:
+  - **P0 discovery** — `docs/dxtrade-notes.md` written; **ToS risk resolved by
+    making the CSV path primary** and keeping `DXtradeSource` fixture-covered but
+    unshipped. Fixtures captured under `tests/fixtures/dxtrade/*.json` (7) +
+    `tests/fixtures/statements/{futures_elite_fills,malformed}.csv`.
+  - **P1 models** — `Trade` gained `source`/`external_id`(unique)/`review_status`/
+    `duplicate_of`; new `Instrument`/`BrokerFill`/`SyncState` models; all exported.
+  - **P1 migration** — `batch_alter_table` + `server_default` backfill,
+    `uq_trades_external_id`, three new tables, singleton `sync_state` row (id=1).
+  - **P2 sources** — `sources/base.py` (`Fill`, `TradeSource`, `TradeSourceError`),
+    `sources/stub.py` (`StubTradeSource`, `fill_from_dict`), `sources/csv_statement.py`
+    (`CsvStatementSource`, tolerant column mapping). `dxtrade.py` NOT built yet.
+  - **P2 instruments** — `controllers/instrument.py` (get_spec/upsert/list/seed, 17
+    CME/CBOT/NYMEX/COMEX specs); `script/db-seed` seeds them idempotently.
+  - **P2 reconciliation** — `controllers/reconciliation.py`: pure
+    `aggregate_round_trips` (partial/scale/multi/flip, weighted-avg, fee-split on
+    crossing fill), idempotent `ingest_fills`, `reconcile_all`, manual-overlap flag
+    (90s tolerance), unknown-spec→needs_review. Reuses `compute_pnl` verbatim;
+    builds `Trade` directly (create_trade can't set source/needs_review rows).
+  - **Tests** — `test_reconciliation.py` (13), `test_instrument.py` (4),
+    `test_csv_import.py` (4). Full suite **63 pytest green**; mypy(strict)+flake8 clean.
+  - `TradeResponse` now exposes `source`/`external_id`/`review_status`/`duplicate_of`.
+  - **Design note:** imported trades (CSV *or* live) all get `trades.source='dxtrade'`
+    (the 2-value column / "Auto" badge); `broker_fills.source` distinguishes the
+    ingest channel (`dxtrade`|`csv`).
+
+### Still greenfield (verified 2026-07-21; these remain to build)
+- No `src/app/sources/dxtrade.py` (live adapter), no `src/app/worker/`.
+- `Procfile` has only `web:`; `requirements.txt` lacks `websockets`/`httpx`;
+  `config.py` has `DXTRADE_*` credential settings but **no worker-loop settings**
+  (backoff caps etc.); no `script/worker`. (Secret-file path + `.gitignore` DONE.)
+- No `e2e/journal-sync.spec.ts` yet (P7; can land now that P3 exists).
+- Frontend `journal/types.ts` has no `source`/`review_status`/`SyncStatus` types;
+  no `ConnectionPanel.tsx`/`SourceBadge.tsx`/`sync.ts`; `TradeTable`/`JournalIsland`
+  not yet source-aware.
+- **DONE (this increment):** `controllers/sync.py`, `schemas/sync.py`,
+  `views/sync.py` (+ guarded test-ingest), `sync_bp` registered.
 
 ### Guiding principles for this build
 - **Reuse `compute_pnl` and `create_trade` verbatim** — do not re-implement P&L.
@@ -79,7 +130,9 @@ Ordering is dependency-aware and front-loads the highest-value, fully-CI-testabl
 core (no live broker needed) ahead of the uncertain/risky live-streaming path.
 
 **P0 — De-risk the uncertain path (do before committing to the live adapter)**
-- [ ] **Discovery spike: confirm DXtrade session-auth + capture fixtures** (spec Step 1).
+- [x] **Discovery spike: confirm DXtrade session-auth + capture fixtures** (spec Step 1).
+      DONE 2026-07-21 — `docs/dxtrade-notes.md`; CSV made primary; all 7 dxtrade
+      fixtures + 2 statement CSVs captured in normalized `Fill`-dict shape.
       Document (short `docs/dxtrade-notes.md`) the DXtrade session-auth REST login,
       the Push/WebSocket fill-event JSON shape, and the REST fills-snapshot
       endpoint for a Futures-Elite-style deployment. **Confirm whether programmatic
@@ -92,8 +145,8 @@ core (no live broker needed) ahead of the uncertain/risky live-streaming path.
       same interface (still fixture-covered). Everything downstream is driven by
       these fixtures, so they unblock all tests.
 
-**P1 — Data foundation (unblocks everything)**
-- [ ] **Extend `Trade` + add new models** (spec Step 2).
+**P1 — Data foundation (unblocks everything)** — ✅ DONE 2026-07-21
+- [x] **Extend `Trade` + add new models** (spec Step 2).
       Add `source` (String(16), NOT NULL, default `'manual'`), `external_id`
       (String(128), nullable, unique), `review_status` (String(16), NOT NULL,
       default `'ok'`), `duplicate_of` (Integer FK→`trades.id`, nullable) to
@@ -129,19 +182,11 @@ core (no live broker needed) ahead of the uncertain/risky live-streaming path.
       flagging via `duplicate_of`); `reconcile_all()`. Reuse `create_trade`/
       `compute_pnl`. Export from `controllers/__init__.py`.
 
-**P3 — API surface + make it drivable (enables integration + E2E)**
-- [ ] **Sync controller + schemas** (spec Step 7).
-      `controllers/sync.py` (state get/set, status recording, gitignored-secret
-      credentials read/write, `import_csv`). `schemas/sync.py`
-      (`SyncStatusResponse`, `CredentialsPayload` write-only, `ReconcileResultResponse`,
-      `InstrumentResponse`); add `source`/`external_id`/`review_status` to
-      `TradeResponse`. Export from `schemas/__init__.py`.
-- [ ] **`sync_bp` blueprint** (spec Step 8): `GET /api/sync/status`, `POST
-      connect|disconnect|credentials|import|reconcile`, `GET /api/instruments`, and
-      the **guarded** `POST /api/sync/_test/ingest` (register only when
-      `TESTING`/`DEBUG` — both exist on `TestingConfig`/`DevelopmentConfig`).
-      Register in `views/__init__.py` (reuse `journal.py`'s `_validation_error`/
-      `_not_found` helpers and `errors.py` content negotiation).
+**P3 — API surface + make it drivable (enables integration + E2E)** — ✅ DONE 2026-07-21
+- [x] **Sync controller + schemas** (spec Step 7). `controllers/sync.py` +
+      `schemas/sync.py` shipped; `TradeResponse` already carried the source fields.
+- [x] **`sync_bp` blueprint** (spec Step 8): all routes + guarded `_test/ingest`
+      (via `attach_test_routes`, TESTING/DEBUG only) registered in `views/__init__.py`.
 
 **P4 — Value-delivering fallback path (works without a live broker)**
 - [ ] **CSV statement adapter** (part of spec Step 9).

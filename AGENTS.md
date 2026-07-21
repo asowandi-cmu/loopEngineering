@@ -12,7 +12,7 @@ script/setup  # Creates .env, database, runs migrations
 
 **Server** (development):
 ```bash
-script/server  # Starts Flask on :5000 + Vite on :5173
+script/server  # Starts Flask on :5000 + Vite on :5174
 ```
 
 ## Cleanup
@@ -39,7 +39,7 @@ IMPORTANT ALWAYS RUN these after implementing to get immediate feedback:
 ## Operational Notes
 
 - **Backend**: Flask on :5000, `PYTHONPATH=src` required when running pytest directly
-- **Frontend**: Vite dev server on :5173, React Islands pattern with `data-island` attributes in templates
+- **Frontend**: Vite dev server on :5174, React Islands pattern with `data-island` attributes in templates
 - **Database**: PostgreSQL, connection via `DATABASE_URL` env var (set by `script/setup`)
 - **Dev environment**: `.env` created by `script/setup`, contains all runtime config
 

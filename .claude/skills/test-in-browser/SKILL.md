@@ -25,7 +25,7 @@ sleep 3  # Wait for both servers to start
 ```
 
 - **Flask backend**: http://localhost:5000 (serves HTML pages + JSON API)
-- **Vite dev server**: http://localhost:5173 (serves JS/CSS assets with HMR)
+- **Vite dev server**: http://localhost:5174 (serves JS/CSS assets with HMR)
 
 ### 2. Navigate to the app
 

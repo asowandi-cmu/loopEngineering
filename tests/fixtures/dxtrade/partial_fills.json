@@ -1,0 +1,6 @@
+[
+  {"external_exec_id": "P1", "external_order_id": "PO1", "account": "ACC1", "symbol": "NQ", "action": "buy", "quantity": 1, "price": "18000.00", "fee": "1.00", "executed_at": "2026-07-20T14:00:00Z"},
+  {"external_exec_id": "P2", "external_order_id": "PO1", "account": "ACC1", "symbol": "NQ", "action": "buy", "quantity": 1, "price": "18002.00", "fee": "1.00", "executed_at": "2026-07-20T14:00:03Z"},
+  {"external_exec_id": "P3", "external_order_id": "PO2", "account": "ACC1", "symbol": "NQ", "action": "sell", "quantity": 1, "price": "18010.00", "fee": "1.00", "executed_at": "2026-07-20T14:05:00Z"},
+  {"external_exec_id": "P4", "external_order_id": "PO2", "account": "ACC1", "symbol": "NQ", "action": "sell", "quantity": 1, "price": "18012.00", "fee": "1.00", "executed_at": "2026-07-20T14:05:02Z"}
+]

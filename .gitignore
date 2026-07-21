@@ -32,6 +32,10 @@ env/
 .env.local
 .env.*.local
 
+# Runtime secrets written by POST /api/sync/credentials (never commit)
+.secrets/
+dxtrade.json
+
 # Node/Frontend
 node_modules/
 frontend/dist/

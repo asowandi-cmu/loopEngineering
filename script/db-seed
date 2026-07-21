@@ -21,6 +21,7 @@ PYTHONPATH=src python << 'EOF'
 from datetime import datetime
 
 from app import create_app
+from app.controllers.instrument import seed_default_instruments
 from app.controllers.trade import create_trade, list_trades
 from app.schemas.trade import TradeCreate
 
@@ -55,8 +56,13 @@ SAMPLES = [
 
 app = create_app()
 with app.app_context():
+    # Instruments seed is idempotent (upsert by symbol) — always ensure the
+    # tick-spec table is populated so imported fills can resolve their P&L.
+    count = seed_default_instruments()
+    print(f"Seeded {count} instrument tick specs")
+
     if list_trades():
-        print("Database already has trades, skipping seed")
+        print("Database already has trades, skipping trade seed")
     else:
         for sample in SAMPLES:
             create_trade(TradeCreate.model_validate(sample))

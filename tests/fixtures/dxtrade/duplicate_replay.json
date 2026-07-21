@@ -1,0 +1,4 @@
+[
+  {"external_exec_id": "R1", "external_order_id": "RO1", "account": "ACC1", "symbol": "ES", "action": "buy", "quantity": 1, "price": "5000.00", "fee": "1.25", "executed_at": "2026-07-20T18:00:00Z"},
+  {"external_exec_id": "R2", "external_order_id": "RO2", "account": "ACC1", "symbol": "ES", "action": "sell", "quantity": 1, "price": "5007.50", "fee": "1.25", "executed_at": "2026-07-20T18:12:00Z"}
+]

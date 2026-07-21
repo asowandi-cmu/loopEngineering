@@ -23,7 +23,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Integer, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import db
@@ -68,6 +68,29 @@ class Trade(db.Model):  # type: ignore[name-defined,misc]
     # Optional metadata ----------------------------------------------------
     strategy: Mapped[str | None] = mapped_column(String(80), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Source / dedupe (Phase 2) -------------------------------------------
+    # ``source`` distinguishes a hand-entered trade from one auto-logged by the
+    # broker-fill reconciliation pipeline; manual trades keep the Phase 1
+    # behaviour exactly (``source='manual'``, ``external_id=NULL``). A deterministic
+    # ``external_id`` per broker round-trip makes re-ingest/reconnect idempotent:
+    # re-reconciling finds the existing row and updates-or-skips instead of
+    # double-counting. ``review_status`` surfaces trades that need a human look
+    # (unknown tick spec, or a likely overlap with a manual trade); ``duplicate_of``
+    # points at the manual trade an import is suspected to duplicate — the import
+    # is flagged, never silently merged or deleted.
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, default='manual'
+    )
+    external_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default='ok'
+    )
+    duplicate_of: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey('trades.id'), nullable=True
+    )
 
     # Server-set audit timestamps -----------------------------------------
     created_at: Mapped[datetime] = mapped_column(

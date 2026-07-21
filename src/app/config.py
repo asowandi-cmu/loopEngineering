@@ -17,7 +17,20 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Vite dev server URL for template asset loading
-    VITE_DEV_SERVER = os.environ.get('VITE_DEV_SERVER', 'http://localhost:5173')
+    VITE_DEV_SERVER = os.environ.get('VITE_DEV_SERVER', 'http://localhost:5174')
+
+    # DXtrade sync (Phase 2). Credentials are the *source of truth* in the
+    # environment; the UI credentials form optionally write-throughs to a
+    # gitignored secret file the worker also reads. Passwords are never returned
+    # by any API nor logged (see controllers/sync.py). See spec Decision 5.
+    DXTRADE_SECRET_FILE = os.environ.get(
+        'DXTRADE_SECRET_FILE', '.secrets/dxtrade.json'
+    )
+    DXTRADE_USERNAME = os.environ.get('DXTRADE_USERNAME')
+    DXTRADE_PASSWORD = os.environ.get('DXTRADE_PASSWORD')
+    DXTRADE_DOMAIN = os.environ.get('DXTRADE_DOMAIN')
+    DXTRADE_BASE_URL = os.environ.get('DXTRADE_BASE_URL')
+    DXTRADE_WS_URL = os.environ.get('DXTRADE_WS_URL')
 
 
 class DevelopmentConfig(Config):

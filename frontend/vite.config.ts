@@ -8,7 +8,7 @@ import path from 'path'
  * Key design decisions:
  * - Output to Flask's static directory for production builds
  * - Generate manifest.json so Flask can resolve hashed asset paths
- * - Dev server on port 5173 provides HMR for development
+ * - Dev server on port 5174 provides HMR for development
  * - Path alias @/* maps to src/* for clean imports
  */
 export default defineConfig({
@@ -23,12 +23,12 @@ export default defineConfig({
 
   // Development server configuration
   server: {
-    port: 5173,
+    port: 5174,
     strictPort: true,
     // Allow Flask (port 5000) to load assets
     cors: true,
     // Origin header for HMR WebSocket connection
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5174',
   },
 
   // Build configuration

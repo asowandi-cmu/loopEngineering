@@ -1,0 +1,6 @@
+[
+  {"external_exec_id": "M1", "account": "ACC1", "symbol": "CL", "action": "buy", "quantity": 1, "price": "75.00", "fee": "1.05", "executed_at": "2026-07-20T10:00:00Z"},
+  {"external_exec_id": "M2", "account": "ACC1", "symbol": "CL", "action": "sell", "quantity": 1, "price": "75.10", "fee": "1.05", "executed_at": "2026-07-20T10:10:00Z"},
+  {"external_exec_id": "M3", "account": "ACC1", "symbol": "CL", "action": "sell", "quantity": 1, "price": "75.20", "fee": "1.05", "executed_at": "2026-07-20T10:20:00Z"},
+  {"external_exec_id": "M4", "account": "ACC1", "symbol": "CL", "action": "buy", "quantity": 1, "price": "75.15", "fee": "1.05", "executed_at": "2026-07-20T10:30:00Z"}
+]

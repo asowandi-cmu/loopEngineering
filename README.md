@@ -25,7 +25,7 @@ This repo is fully configured for **GitHub Codespaces** — no local setup neede
 3. The post-create script runs `script/setup` automatically — database, dependencies, and environment are ready
 4. Start the dev server:
    ```bash
-   ./script/server   # Flask on :5000, Vite on :5173
+   ./script/server   # Flask on :5000, Vite on :5174
    ```
 
 ---

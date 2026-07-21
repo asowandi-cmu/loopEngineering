@@ -26,14 +26,14 @@
   },
   "forwardPorts": [
     5000,
-    5173
+    5174
   ],
   "portsAttributes": {
     "5000": {
       "label": "Flask",
       "onAutoForward": "notify"
     },
-    "5173": {
+    "5174": {
       "label": "Vite",
       "onAutoForward": "silent"
     }
