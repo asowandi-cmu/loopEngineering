@@ -1,0 +1,29 @@
+P3 — Sync API surface. Chose this as the highest-value next item: the
+reconciliation pipeline (already built, uncommitted) had no HTTP surface, so
+nothing downstream (E2E, frontend, worker verification) could exercise it.
+
+Key design decisions:
+- sync_state singleton is created lazily by get_sync_state() (id=1) because the
+  test DB uses db.create_all() which skips the migration's seed INSERT. This keeps
+  create_all and migrated DBs behaviourally identical (single source of truth).
+- connect/disconnect write ONLY sync_state.enabled (the *desired* state). The
+  worker is the sole writer of `status` — preserves the "no in-process coupling,
+  DB is the only channel" invariant from the spec, so no web/worker race.
+- Credentials: env is source of truth per-field, with optional write-through to a
+  gitignored secret file (mode 0600) for shell-less single-user deploys. The
+  password is never returned (204 no-body on save; status exposes only the boolean
+  credentials_configured) nor logged. Spec Decision 5.
+- Guarded _test/ingest is attached via attach_test_routes(app) in
+  views/__init__.py ONLY when TESTING/DEBUG, so it is genuinely 404 in production
+  (not just a runtime guard). Verified by test_test_ingest_absent_in_production
+  building a ProductionConfig app. This is the security-relevant property: a
+  test-only pipeline-driver must not exist in prod.
+- import_csv tags broker_fills.source='csv' but the resulting trades still get
+  source='dxtrade' (the 2-value "Auto" badge) — matches the reconciliation design.
+
+Toolchain note: the pre-commit mypy hook runs in an isolated venv and only
+installs additional_dependencies, so pytest was absent and @pytest.fixture read
+as an untyped decorator (disallow_untyped_decorators / strict). Added `pytest` to
+the hook's additional_dependencies and annotated the new + prior-increment test
+files/conftest to satisfy strict mypy. `mypy src/` (the documented gate) was
+already clean; this closes the stricter tests-included hook gate too.
