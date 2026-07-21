@@ -1,0 +1,50 @@
+Phase 2 P6 (frontend sync UI) + P7 (automated E2E + frontend tests).
+
+WHY THIS INCREMENT NOW:
+- P3 (sync API surface) landed last commit; P4-csv done. The highest-value,
+  fully-CI-testable next step was the frontend that makes the whole Phase 2
+  pipeline usable, which also unblocks the automated E2E. P5 (live DXtrade
+  adapter + worker) is intentionally deferred — the P0 spike resolved the ToS
+  risk by making CSV/test-ingest the primary path, so building the live
+  streamer would be higher-risk, lower-value work than shipping the UI.
+
+KEY DESIGN DECISIONS + WHY:
+- Exported api.ts `request` instead of duplicating fetch logic. The wrapper
+  spreads `...init` AFTER the default headers object, so passing `headers` in
+  init REPLACES the default `Content-Type: application/json` wholesale. importCsv
+  exploits this: it passes only `{ Accept }`, letting the browser set the
+  multipart boundary. A JSON content-type on a FormData body silently corrupts
+  the upload — sync.test.ts asserts the content-type is absent to lock this in.
+- JournalIsland owns syncStatus and polls (per spec Step 12); ConnectionPanel is
+  a controlled child. Two callbacks: onStatusChange (connect/disconnect return
+  fresh status, counts unchanged) and onDataChanged (import/reconcile changed
+  data → parent refetches trades+stats + re-reads status).
+- Live-refetch watermark: a ref initialized null on first poll (so mount does NOT
+  double-refetch the data the mount effect already loaded). Refetch fires only
+  when trades_dxtrade OR last_fill_at grows. connect/disconnect + post-import both
+  call rememberStatus to advance the watermark so the next poll doesn't see
+  spurious "growth" and refetch redundantly.
+- statusMeta + formatDedupe are exported PURE functions so connectionPanel.test
+  asserts "badge label per status" and "dedupe summary formatting" render-free
+  (the spec's two stated test targets). The dedupe wording uses the more detailed
+  spec phrasing: "N imported · M skipped as duplicates · K flagged for review".
+- SourceBadge shows Manual(neutral)/Auto(blue) + amber review chip; when
+  duplicate_of is set the chip's tooltip points at the overlapping manual trade —
+  reinforcing the spec rule that a flagged import is never silently deleted.
+  data-testid="source-badge" + data-source make the E2E badge assertion robust.
+
+E2E NOTE (operational):
+- The dev server registers the guarded /api/sync/_test/ingest route because
+  DevelopmentConfig.DEBUG=True (views/__init__ gate). The E2E's exact-P&L
+  assertion ($995.50 = 40 ticks × $12.50 × 2 − $4.50, the same ES round-trip as
+  the manual E2E) requires the ES tick spec seeded; on a fresh DB the instruments
+  table is empty and reconciliation would emit tick_size=0 / needs_review / $0.
+  Fix: run script/db-seed (idempotent instrument upsert) before E2E. Documented
+  in AGENTS.md.
+
+VALIDATION: 77 pytest, 33 vitest (was 23), 3 Playwright (was 2); mypy(strict) +
+tsc + flake8 + eslint all clean.
+
+STILL GREENFIELD AFTER THIS: P5 live path (sources/dxtrade.py, worker/,
+Procfile worker line, websockets/httpx deps, worker-loop config) and its tests
+(test_dxtrade_source.py, test_worker.py).
