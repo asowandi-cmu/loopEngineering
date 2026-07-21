@@ -22,7 +22,7 @@ interface ErrorBody {
   fields?: Record<string, string>
 }
 
-async function request<T>(url: string, init?: Parameters<typeof fetch>[1]): Promise<T> {
+export async function request<T>(url: string, init?: Parameters<typeof fetch>[1]): Promise<T> {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',

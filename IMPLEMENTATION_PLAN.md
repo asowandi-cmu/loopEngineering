@@ -40,6 +40,39 @@ This is **reused unchanged** by all of Phase 2.
 ## Phase 2 — IN PROGRESS (automated DXtrade fill sync)
 
 ### Progress log
+- **2026-07-21 — Frontend sync UI + automated E2E landed (P6 + P7-E2E + P7-frontend-tests).**
+  Full suite green: 77 pytest, 33 vitest (was 23), 3 Playwright (was 2); mypy(strict)
+  + tsc + flake8 + eslint all clean.
+  - **`journal/api.ts`** — exported the `request` wrapper so `sync.ts` reuses it
+    (multipart-safe: passing `headers` in `init` replaces the default JSON
+    content-type, so `importCsv` lets the browser set the multipart boundary).
+  - **`journal/sync.ts`** (new) — typed wrappers `getSyncStatus`/`connect`/
+    `disconnect`/`saveCredentials`/`importCsv` (FormData)/`reconcile`/`testIngest`.
+  - **`journal/types.ts`** — `Trade` gained `source`/`external_id`/`review_status`/
+    `duplicate_of`; added `SyncConnectionStatus`, `SyncCounts`, `SyncStatus`,
+    `ImportResult`.
+  - **`islands/journal/SourceBadge.tsx`** (new) — `Manual` (neutral) vs `Auto`
+    (blue `dxtrade`); amber `review` chip on `needs_review` with a `duplicate_of`
+    tooltip. Carries `data-testid="source-badge"` + `data-source` for the E2E.
+  - **`islands/journal/ConnectionPanel.tsx`** (new) — status pill (exported pure
+    `statusMeta`), write-only credentials form (password never pre-filled),
+    Connect/Disconnect (disabled until credentials configured), Import CSV,
+    Reconcile, and a dedupe summary (exported pure `formatDedupe`).
+  - **`islands/journal/TradeTable.tsx`** — new **Source** column rendering `SourceBadge`.
+  - **`islands/journal/JournalIsland.tsx`** — holds `syncStatus`; polls
+    `/api/sync/status` every 5s; refetches trades+stats when the watermark
+    (`counts.trades_dxtrade` or `last_fill_at`) grows, so streamed trades appear
+    live with no reload. Renders `ConnectionPanel` above `StatsHeader`.
+  - **Tests** — `frontend/tests/journal/sync.test.ts` (4: status parse, multipart
+    body has no JSON content-type, 204 credentials, `ApiRequestError` surfacing),
+    `frontend/tests/journal/connectionPanel.test.ts` (6: `statusMeta` per status +
+    `formatDedupe`), `e2e/journal-sync.spec.ts` (drives `_test/ingest`, asserts live
+    `Auto` badge + $995.50 net, re-ingest keeps row count stable + `skipped_duplicates>0`).
+  - **Design note:** `JournalIsland` seeds a `syncWatermark` ref on the first poll
+    (null→no refetch on mount); connect/disconnect and post-import both call
+    `rememberStatus` to update the watermark so the poll doesn't double-refetch.
+  - **Ops note:** the E2E's exact-P&L assertion needs the ES tick spec present —
+    run `script/db-seed` (idempotent instrument upsert) before E2E on a fresh DB.
 - **2026-07-21 — API surface landed (P3: sync controller + schemas + blueprint).**
   Full suite now **77 pytest green** (was 63); mypy(strict)+flake8 clean.
   - **`schemas/sync.py`** — `CredentialsPayload` (write-only, strips+rejects blank
@@ -106,10 +139,10 @@ This is **reused unchanged** by all of Phase 2.
 - `Procfile` has only `web:`; `requirements.txt` lacks `websockets`/`httpx`;
   `config.py` has `DXTRADE_*` credential settings but **no worker-loop settings**
   (backoff caps etc.); no `script/worker`. (Secret-file path + `.gitignore` DONE.)
-- No `e2e/journal-sync.spec.ts` yet (P7; can land now that P3 exists).
-- Frontend `journal/types.ts` has no `source`/`review_status`/`SyncStatus` types;
-  no `ConnectionPanel.tsx`/`SourceBadge.tsx`/`sync.ts`; `TradeTable`/`JournalIsland`
-  not yet source-aware.
+- **DONE (2026-07-21):** P6 frontend (`sync.ts`, `ConnectionPanel.tsx`,
+  `SourceBadge.tsx`, source-aware `TradeTable`/`JournalIsland`, extended `types.ts`),
+  P7 automated E2E (`e2e/journal-sync.spec.ts`), and P7 frontend tests
+  (`sync.test.ts`, `connectionPanel.test.ts`).
 - **DONE (this increment):** `controllers/sync.py`, `schemas/sync.py`,
   `views/sync.py` (+ guarded test-ingest), `sync_bp` registered.
 
@@ -209,7 +242,7 @@ core (no live broker needed) ahead of the uncertain/risky live-streaming path.
       (e.g. `.secrets/dxtrade.json`) to `.gitignore`.
 
 **P6 — Frontend (live UI)**
-- [ ] **Sync client + panel + badges + live refetch** (spec Step 12).
+- [x] **Sync client + panel + badges + live refetch** — ✅ DONE 2026-07-21 (spec Step 12).
       `journal/sync.ts` (typed wrappers over `/api/sync/*` reusing `api.ts`'s
       `request`/`ApiRequestError`; multipart `importCsv`).
       `islands/journal/ConnectionPanel.tsx` (status pill disconnected/connecting/
@@ -223,7 +256,7 @@ core (no live broker needed) ahead of the uncertain/risky live-streaming path.
       increases). `main.ts` unchanged (island already registered).
 
 **P7 — Tests + validation (write alongside each layer; this is the closeout)**
-- [ ] **Automated E2E** `e2e/journal-sync.spec.ts` (spec Step 11 — can land early
+- [x] **Automated E2E** `e2e/journal-sync.spec.ts` — ✅ DONE 2026-07-21 (spec Step 11 — can land early
       once P3 exists): POST a fixture batch to `/api/sync/_test/ingest`, assert a
       `dxtrade` source badge + correct Net P&L, re-POST same batch → row count
       unchanged & `skipped_duplicates > 0`, stats header updates. No live broker.
@@ -232,8 +265,8 @@ core (no live broker needed) ahead of the uncertain/risky live-streaming path.
       `test_csv_import.py`, `test_dxtrade_source.py`, `test_sync_view.py`
       (incl. guarded endpoint absent in production config), `test_worker.py`
       (stub source + fake backoff/clock; reconnect re-delivery adds zero trades).
-- [ ] **Frontend tests**: `frontend/tests/journal/sync.test.ts`,
-      `connectionPanel.test.ts`.
+- [x] **Frontend tests**: `frontend/tests/journal/sync.test.ts`,
+      `connectionPanel.test.ts`. — ✅ DONE 2026-07-21
 - [ ] **Run all validation with zero regressions** (spec Step 14):
       `script/test`, `script/typecheck`, `script/lint`, `script/test-e2e` — Phase 1
       unit tests + `e2e/journal.spec.ts` must stay green.

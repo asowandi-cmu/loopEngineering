@@ -7,8 +7,8 @@
  * stats, so re-reading guarantees the header and table always reflect the true
  * persisted state rather than an optimistic client guess.
  */
-import { useCallback, useEffect, useState } from 'react'
-import type { Stats, Trade, TradeInput } from '@/journal/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Stats, SyncStatus, Trade, TradeInput } from '@/journal/types'
 import {
   createTrade,
   deleteTrade,
@@ -16,9 +16,14 @@ import {
   listTrades,
   updateTrade,
 } from '@/journal/api'
+import { getSyncStatus } from '@/journal/sync'
+import { ConnectionPanel } from './ConnectionPanel'
 import { StatsHeader } from './StatsHeader'
 import { TradeForm } from './TradeForm'
 import { TradeTable } from './TradeTable'
+
+/** How often to poll `/api/sync/status` so streamed trades appear live. */
+const SYNC_POLL_MS = 5000
 
 export function JournalIsland() {
   const [trades, setTrades] = useState<Trade[]>([])
@@ -26,12 +31,37 @@ export function JournalIsland() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
+
+  // Last-seen sync watermark; a growth in either field means new synced trades
+  // landed, so we refetch. `null` until the first poll (so mount doesn't refetch).
+  const syncWatermark = useRef<{ trades: number; lastFill: string | null } | null>(null)
 
   const refetch = useCallback(async (): Promise<void> => {
     const [nextTrades, nextStats] = await Promise.all([listTrades(), getStats()])
     setTrades(nextTrades)
     setStats(nextStats)
   }, [])
+
+  // Record a fresh status without triggering the poll's growth-refetch (used by
+  // connect/disconnect and after an import, where the parent refetches directly).
+  const rememberStatus = useCallback((status: SyncStatus): void => {
+    setSyncStatus(status)
+    syncWatermark.current = {
+      trades: status.counts.trades_dxtrade,
+      lastFill: status.last_fill_at,
+    }
+  }, [])
+
+  // After an import/reconcile: reload trades + stats, then refresh the status pill.
+  const handleSyncDataChanged = useCallback(async (): Promise<void> => {
+    await refetch()
+    try {
+      rememberStatus(await getSyncStatus())
+    } catch {
+      /* transient — the next poll will reconcile the pill */
+    }
+  }, [refetch, rememberStatus])
 
   useEffect(() => {
     let active = true
@@ -51,6 +81,39 @@ export function JournalIsland() {
       active = false
     }
   }, [])
+
+  // Poll sync status; refetch trades + stats whenever the watermark grows so
+  // streamed trades appear live without a manual reload (Phase 2 live update).
+  useEffect(() => {
+    let active = true
+
+    const tick = async (): Promise<void> => {
+      try {
+        const status = await getSyncStatus()
+        if (!active) return
+        setSyncStatus(status)
+        const prev = syncWatermark.current
+        const grew =
+          prev !== null &&
+          (status.counts.trades_dxtrade > prev.trades ||
+            (status.last_fill_at !== null && status.last_fill_at !== prev.lastFill))
+        syncWatermark.current = {
+          trades: status.counts.trades_dxtrade,
+          lastFill: status.last_fill_at,
+        }
+        if (grew) await refetch()
+      } catch {
+        /* ignore transient poll errors; the next tick retries */
+      }
+    }
+
+    void tick()
+    const timer = window.setInterval(() => void tick(), SYNC_POLL_MS)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [refetch])
 
   const editingTrade = editingId === null
     ? null
@@ -96,6 +159,12 @@ export function JournalIsland() {
 
   return (
     <div>
+      <ConnectionPanel
+        status={syncStatus}
+        onStatusChange={rememberStatus}
+        onDataChanged={handleSyncDataChanged}
+      />
+
       <StatsHeader stats={stats} />
 
       <TradeForm

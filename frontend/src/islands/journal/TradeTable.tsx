@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react'
 import type { Trade } from '@/journal/types'
 import { formatMoney, formatTicks, pnlColor } from '@/journal/format'
+import { SourceBadge } from './SourceBadge'
 
 interface TradeTableProps {
   trades: Trade[]
@@ -35,6 +36,7 @@ export function TradeTable({ trades, onEdit, onDelete }: TradeTableProps) {
         <thead className="bg-gray-100 text-gray-600 text-left">
           <tr>
             <Th>Symbol</Th>
+            <Th>Source</Th>
             <Th>Side</Th>
             <Th className="text-right">Contracts</Th>
             <Th className="text-right">Entry</Th>
@@ -53,6 +55,13 @@ export function TradeTable({ trades, onEdit, onDelete }: TradeTableProps) {
           {trades.map((trade) => (
             <tr key={trade.id} data-testid="trade-row" className="hover:bg-gray-50">
               <Td className="font-medium text-gray-800">{trade.symbol}</Td>
+              <Td>
+                <SourceBadge
+                  source={trade.source}
+                  reviewStatus={trade.review_status}
+                  duplicateOf={trade.duplicate_of}
+                />
+              </Td>
               <Td>{trade.side}</Td>
               <Td className="text-right">{trade.contracts}</Td>
               <Td className="text-right">{trade.entry_price}</Td>

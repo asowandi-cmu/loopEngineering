@@ -28,6 +28,12 @@ export interface Trade {
   net_pnl: number
   strategy: string | null
   notes: string | null
+  // Phase 2 provenance/dedupe fields. Manual trades read 'manual'/null/'ok'/null;
+  // synced trades read 'dxtrade' and may carry an external_id + review flag.
+  source: 'manual' | 'dxtrade'
+  external_id: string | null
+  review_status: string
+  duplicate_of: number | null
   created_at: string
   updated_at: string
 }
@@ -45,6 +51,43 @@ export interface Stats {
   win_rate: number
   average_win: number
   average_loss: number
+}
+
+/** One of the four observed connection states the sync worker reports. */
+export type SyncConnectionStatus = 'disconnected' | 'connecting' | 'streaming' | 'error'
+
+/** Live headline counts shown next to the status pill. */
+export interface SyncCounts {
+  trades_dxtrade: number
+  fills: number
+  needs_review: number
+}
+
+/**
+ * Observed sync state from `GET /api/sync/status`. Deliberately secret-free —
+ * the server exposes only whether credentials are configured, never their value.
+ */
+export interface SyncStatus {
+  enabled: boolean
+  status: SyncConnectionStatus
+  credentials_configured: boolean
+  last_synced_at: string | null
+  last_fill_at: string | null
+  last_error: string | null
+  counts: SyncCounts
+}
+
+/**
+ * Dedupe-visible counts returned by import / reconcile / test-ingest. `created`
+ * is new trades; `skipped_duplicates` are fills already ingested; `flagged` need
+ * review (unknown spec or a possible manual duplicate).
+ */
+export interface ImportResult {
+  created: number
+  updated: number
+  skipped_duplicates: number
+  flagged: number
+  open_positions: number
 }
 
 /** Raw add/edit form state — numeric fields are strings while editing. */
