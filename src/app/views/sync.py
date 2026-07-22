@@ -25,6 +25,7 @@ from ..controllers import reconciliation as reconciliation_controller
 from ..controllers import sync as sync_controller
 from ..schemas.sync import (
     CredentialsPayload,
+    DemoConnectResponse,
     InstrumentResponse,
     ReconcileResultResponse,
     SyncStatusResponse,
@@ -111,6 +112,22 @@ def sync_import() -> Any:
     except TradeSourceError as exc:
         return _bad_request(str(exc))
     return _result_payload(result)
+
+
+@sync_bp.route('/api/sync/demo', methods=['POST'])
+def sync_demo() -> Any:
+    """Activate the demo test account: auto-populate trades + mark streaming.
+
+    Runs the canned demo fills through the real reconciliation pipeline (no live
+    broker, no real credentials) and returns the fresh status alongside the
+    dedupe-visible ingest counts. Idempotent on repeat activation.
+    """
+    result = sync_controller.connect_test_account()
+    body = DemoConnectResponse(
+        status=SyncStatusResponse.model_validate(_status_payload()),
+        result=ReconcileResultResponse.model_validate(result.as_dict()),
+    )
+    return jsonify(body.model_dump(mode='json'))
 
 
 @sync_bp.route('/api/sync/reconcile', methods=['POST'])

@@ -9,6 +9,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   connect,
+  connectTestAccount,
   getSyncStatus,
   importCsv,
   saveCredentials,
@@ -80,6 +81,20 @@ describe('saveCredentials', () => {
     expect(url).toBe('/api/sync/credentials')
     expect(JSON.parse(init.body as string)).toMatchObject({ username: 'u', domain: 'd' })
     expect(result).toBeUndefined()
+  })
+})
+
+describe('connectTestAccount', () => {
+  it('POSTs /api/sync/demo and parses the status + ingest result', async () => {
+    const fetchMock = mockFetch({
+      body: { status: sampleStatus, result: { created: 3, open_positions: 1, skipped_duplicates: 0 } },
+    })
+    const { status, result } = await connectTestAccount()
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/sync/demo')
+    expect(init.method).toBe('POST')
+    expect(status.status).toBe('streaming')
+    expect(result.created).toBe(3)
   })
 })
 

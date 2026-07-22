@@ -80,6 +80,17 @@ class ReconcileResultResponse(BaseModel):
     open_positions: int
 
 
+class DemoConnectResponse(BaseModel):
+    """Returned by the test-account route: fresh status + the ingest result.
+
+    The panel needs both in one round-trip — the ``status`` to refresh the pill
+    (now *streaming*/configured) and the ``result`` to show the dedupe summary.
+    """
+
+    status: SyncStatusResponse
+    result: ReconcileResultResponse
+
+
 class InstrumentResponse(BaseModel):
     """A tick spec, for the instruments listing / future symbol editor."""
 

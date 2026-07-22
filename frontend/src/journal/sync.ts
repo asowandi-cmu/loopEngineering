@@ -64,6 +64,21 @@ export function reconcile(): Promise<ImportResult> {
   return request<ImportResult>('/api/sync/reconcile', { method: 'POST' })
 }
 
+/** Fresh status + ingest counts returned when the demo test account activates. */
+export interface DemoConnectResult {
+  status: SyncStatus
+  result: ImportResult
+}
+
+/**
+ * Activate the demo **test account**: auto-populate the journal with a canned
+ * fill batch through the real pipeline (no broker, no real credentials) and mark
+ * the connection streaming. Idempotent — re-running skips already-synced fills.
+ */
+export function connectTestAccount(): Promise<DemoConnectResult> {
+  return request<DemoConnectResult>('/api/sync/demo', { method: 'POST' })
+}
+
 /**
  * Drive the real ingest pipeline with a posted fixture-fill batch.
  *

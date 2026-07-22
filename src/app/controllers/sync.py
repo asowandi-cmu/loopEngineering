@@ -33,6 +33,8 @@ from sqlalchemy import func, select
 
 from ..models import BrokerFill, SyncState, Trade, db
 from ..sources.csv_statement import CsvStatementSource
+from ..sources.demo import DEMO_CREDENTIALS, demo_source
+from .instrument import seed_default_instruments
 from .reconciliation import ReconcileResult, ingest_fills
 
 # (config attr, secret-file key) for each credential field; env wins per-field.
@@ -171,6 +173,25 @@ def save_credentials(
 
 
 # --- CSV import ---------------------------------------------------------------
+
+
+def connect_test_account() -> ReconcileResult:
+    """Activate the demo *test account* and auto-populate trades (no broker).
+
+    Backs the connection panel's "Use test account" button: seeds the default
+    tick specs (so the demo symbols resolve to real P&L), persists obviously-fake
+    demo credentials so the status pill reads *configured*, marks the connection
+    ``streaming``/``enabled``, then runs the canned demo fills through the *same*
+    ``ingest_fills`` pipeline the live feed uses. Idempotent by the fills' stable
+    ``DEMO-*`` ids: a repeat activation reports ``skipped_duplicates`` rather than
+    creating duplicate trades.
+    """
+    seed_default_instruments()
+    save_credentials(**DEMO_CREDENTIALS)
+    result = ingest_fills(demo_source().fetch_fills(), source='dxtrade')
+    set_enabled(True)
+    record_status('streaming', cursor='demo', fill_at=_utcnow())
+    return result
 
 
 def import_csv(data: bytes) -> ReconcileResult:

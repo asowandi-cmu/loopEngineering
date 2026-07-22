@@ -7,6 +7,7 @@
  * stats, so re-reading guarantees the header and table always reflect the true
  * persisted state rather than an optimistic client guess.
  */
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Stats, SyncStatus, Trade, TradeInput } from '@/journal/types'
 import {

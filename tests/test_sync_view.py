@@ -136,6 +136,60 @@ def test_reconcile_after_spec_seed(app: Flask, client: FlaskClient[Any]) -> None
     assert resp.get_json()['updated'] == 1
 
 
+# --- Demo test account --------------------------------------------------------
+
+
+def test_demo_account_populates_and_marks_streaming(
+    app: Flask, client: FlaskClient[Any], tmp_path: Path
+) -> None:
+    app.config['DXTRADE_SECRET_FILE'] = str(tmp_path / 'dxtrade.json')
+
+    resp = client.post('/api/sync/demo')
+    assert resp.status_code == 200
+    body = resp.get_json()
+
+    # Three closed round-trips (ES/NQ/CL) + one still-open ES long.
+    assert body['result']['created'] == 3
+    assert body['result']['open_positions'] == 1
+    assert body['result']['skipped_duplicates'] == 0
+
+    # The connection now reads configured + streaming without real credentials.
+    assert body['status']['credentials_configured'] is True
+    assert body['status']['enabled'] is True
+    assert body['status']['status'] == 'streaming'
+    assert body['status']['counts']['trades_dxtrade'] == 3
+
+    # The synced trades are real, P&L-bearing dxtrade rows.
+    trades = client.get('/api/trades').get_json()['trades']
+    dxtrade = [t for t in trades if t['source'] == 'dxtrade']
+    assert len(dxtrade) == 3
+    assert all(t['review_status'] == 'ok' for t in dxtrade)
+
+
+def test_demo_account_is_idempotent_on_replay(
+    app: Flask, client: FlaskClient[Any], tmp_path: Path
+) -> None:
+    app.config['DXTRADE_SECRET_FILE'] = str(tmp_path / 'dxtrade.json')
+
+    client.post('/api/sync/demo')
+    second = client.post('/api/sync/demo').get_json()
+
+    # Re-activating the test account creates no new trades — dupes are skipped.
+    assert second['result']['created'] == 0
+    assert second['result']['skipped_duplicates'] > 0
+    assert len(client.get('/api/trades').get_json()['trades']) == 3
+
+
+def test_demo_account_absent_credentials_leak(
+    app: Flask, client: FlaskClient[Any], tmp_path: Path
+) -> None:
+    app.config['DXTRADE_SECRET_FILE'] = str(tmp_path / 'dxtrade.json')
+    resp = client.post('/api/sync/demo')
+    # The demo password must never surface in the response, like real creds.
+    assert 'demo-test-account' not in resp.get_data(as_text=True)
+    assert 'password' not in resp.get_json()['status']
+
+
 # --- Instruments --------------------------------------------------------------
 
 

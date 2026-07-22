@@ -21,6 +21,7 @@ import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import type { ImportResult, SyncConnectionStatus, SyncStatus } from '@/journal/types'
 import {
   connect,
+  connectTestAccount,
   disconnect,
   importCsv,
   reconcile,
@@ -92,7 +93,7 @@ const EMPTY_CREDENTIALS: CredentialsInput = {
 
 export function ConnectionPanel({ status, onStatusChange, onDataChanged }: ConnectionPanelProps) {
   const [credentials, setCredentials] = useState<CredentialsInput>(EMPTY_CREDENTIALS)
-  const [busy, setBusy] = useState<'connect' | 'creds' | 'import' | 'reconcile' | null>(null)
+  const [busy, setBusy] = useState<'connect' | 'demo' | 'creds' | 'import' | 'reconcile' | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [credsSaved, setCredsSaved] = useState(false)
@@ -147,6 +148,15 @@ export function ConnectionPanel({ status, onStatusChange, onDataChanged }: Conne
     })
   }
 
+  const handleTestAccount = (): void => {
+    void run('demo', async () => {
+      const { status: next, result: imported } = await connectTestAccount()
+      setResult(imported)
+      onStatusChange(next)
+      await onDataChanged()
+    })
+  }
+
   const handleImport = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -187,6 +197,16 @@ export function ConnectionPanel({ status, onStatusChange, onDataChanged }: Conne
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleTestAccount}
+            disabled={busy === 'demo'}
+            data-testid="use-test-account"
+            className="rounded border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+            title="Populate the journal with a demo account — no broker or credentials needed"
+          >
+            {busy === 'demo' ? 'Loading…' : 'Use test account'}
+          </button>
           <button
             type="button"
             onClick={handleToggleConnection}
