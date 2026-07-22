@@ -1,6 +1,6 @@
 # Running the App
 
-This is the **trading journal** application — a Flask + React Islands app backed by PostgreSQL. This guide covers running it locally (or in a Codespace).
+This is the **trading journal** application — a Flask + React Islands app backed by PostgreSQL. This guide covers running it a codespace.
 
 ## Tech Stack
 
@@ -13,6 +13,7 @@ This is the **trading journal** application — a Flask + React Islands app back
 - Python 3.12
 - Node 20
 - PostgreSQL 16 (running locally)
+- Open this repository in a codespace [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/asowandi-cmu/loopEngineering)
 
 > In **GitHub Codespaces** these are pre-installed and `script/setup` runs automatically on container create — you can skip straight to [Start the servers](#3-start-the-servers).
 
